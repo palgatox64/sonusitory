@@ -29,13 +29,13 @@
                 <span style="margin-right: 1rem;">Bienvenido, {{ user.username }}</span>
                 <form action="{% url 'logout' %}" method="post" style="display: inline;">
                     {% csrf_token %}
-                    <button type="submit" style="background:none; border:none; color:#bb86fc; cursor:pointer; padding:0; text-decoration:underline; font-size:inherit;">
+                    <button type="submit" class="btn">
                         Cerrar Sesión
                     </button>
                 </form>
             {% else %}
-                <a href="{% url 'login' %}" style="margin-right: 1rem;">Iniciar Sesión</a>
-                <a href="{% url 'register' %}">Registrarse</a>
+                <a href="{% url 'login' %}" style="margin-right: 1rem;" class="btn">Iniciar Sesión</a>
+                <a href="{% url 'register' %}" class="btn">Registrarse</a>
             {% endif %}
         </div>
     </nav>
