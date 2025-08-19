@@ -147,3 +147,45 @@ a:hover {
     margin-bottom: 1.5rem;
     border-bottom: 1px solid #282828;
 }
+
+/* --- ESTILOS PARA FORMULARIOS DE LOGIN/REGISTRO --- */
+.auth-form-container {
+    max-width: 450px; /* Ancho máximo del formulario */
+    margin: 4rem auto; /* Centra el formulario y le da espacio vertical */
+    padding: 2rem;
+    background-color: #181818;
+    border-radius: 8px;
+    border: 1px solid #282828;
+}
+
+.auth-form-container h1 {
+    text-align: center;
+    margin-top: 0;
+}
+
+
+.auth-form-container input[type="text"],
+.auth-form-container input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 1rem;
+    background-color: #333;
+    border: 1px solid #555;
+    color: #fff;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+
+.auth-form-container label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+
+.auth-form-container .btn {
+    width: 100%;
+    margin-top: 1rem;
+}

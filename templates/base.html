@@ -34,8 +34,13 @@
                     </button>
                 </form>
             {% else %}
-                <a href="{% url 'login' %}" style="margin-right: 1rem;" class="btn">Iniciar Sesión</a>
-                <a href="{% url 'register' %}" class="btn">Registrarse</a>
+                {% if request.resolver_match.url_name != 'login' %}
+                    <a href="{% url 'login' %}" style="margin-right: 1rem;" class="btn">Iniciar Sesión</a>
+                {% endif %}
+
+                {% if request.resolver_match.url_name != 'register' %}
+                    <a href="{% url 'register' %}" class="btn">Registrarse</a>
+                {% endif %}
             {% endif %}
         </div>
     </nav>

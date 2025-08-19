@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Crear una Cuenta</h1>
-    <p>Crea tu cuenta para empezar a construir tu biblioteca musical.</p>
-    <form method="post" action="{% url 'register' %}">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit" class="btn">Registrarse</button>
-    </form>
+    <div class="auth-form-container">
+        <h1>Crear una Cuenta</h1>
+        <p>Crea tu cuenta para empezar a construir tu biblioteca musical.</p>
+        <form method="post" action="{% url 'register' %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn">Registrarse</button>
+        </form>
+    </div>
 {% endblock %}
 
 {% block player %}{% endblock %}
