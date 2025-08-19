@@ -1,0 +1,22 @@
+{% extends request.htmx|yesno:"_base_empty.html,base.html" %}
+
+{% block content %}
+    <h1>Artistas</h1>
+    <div class="action-bar">
+        <p>
+            <a href="{% url 'select_folder' %}" hx-get="{% url 'select_folder' %}" hx-target=".main-content" hx-push-url="true" class="btn" id="change-folder-btn">Cambiar carpeta de música</a>
+        </p>
+    </div>
+
+    {% if artists %}
+        <div class="artist-list">
+            {% for artist in artists %}
+                <a href="{% url 'artist_detail' artist_id=artist.id %}" hx-get="{% url 'artist_detail' artist_id=artist.id %}" hx-target=".main-content" hx-push-url="true">
+                    🎤 {{ artist.name }}
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No se encontraron artistas. Asegúrate de haber escaneado tu librería.</p>
+    {% endif %}
+{% endblock %}

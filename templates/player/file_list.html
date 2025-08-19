@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Tus Canciones</h1>
+
+<a href="{% url 'scan_library' %}">Escanear Librería</a>
+
+{% if files %}
+    <ul id="song-list">
+        {% for file in files %}
+            <li
+                data-song-id="{{ file.google_file_id }}" data-song-name="{{ file.name }}">
+                {{ file.name }}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No se encontraron archivos de audio.</p>
+{% endif %}
+{% endblock %}
+
+

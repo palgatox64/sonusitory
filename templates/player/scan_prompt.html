@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div style="text-align: center; padding-top: 5em;">
+        <h1>¡Carpeta Seleccionada!</h1>
+        <p>Has configurado tu carpeta de música con éxito.</p>
+        <p>Haz clic en el botón de abajo para iniciar el escaneo de tu librería. Este proceso puede tardar varios minutos.</p>
+        
+        <button 
+            hx-post="{% url 'start_scan_task' %}" 
+            hx-swap="none"
+            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+            class="btn"
+            id="scan-button">
+            Iniciar Escaneo
+        </button>
+    </div>
+{% endblock %}
+
+{% block player %}{% endblock %}
+

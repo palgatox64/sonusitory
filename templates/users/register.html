@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Crear una Cuenta</h1>
+    <p>Crea tu cuenta para empezar a construir tu biblioteca musical.</p>
+    <form method="post" action="{% url 'register' %}">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" style="padding: 10px 20px; background-color: #bb86fc; color: black; border: none; border-radius: 5px; cursor: pointer;">Registrarse</button>
+    </form>
+{% endblock %}
+
+{% block player %}{% endblock %}

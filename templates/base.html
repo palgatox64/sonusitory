@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonusitory</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <script>
+        document.body.addEventListener('htmx:configRequest', function(event) {
+            if (event.detail.verb === 'post') {
+                const token = document.querySelector('meta[name="csrf-token"]').content;
+                event.detail.headers['X-CSRFToken'] = token;
+            }
+        });
+    </script>
+    <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <nav style="padding: 1rem 2rem; background-color: #181818; border-bottom: 1px solid #282828; display: flex; justify-content: space-between; align-items: center;">
+        <a href="/" style="font-weight: bold; font-size: 1.2rem; color: #ffffff;">Sonusitory</a>
+        <div>
+            {% if user.is_authenticated %}
+                <span style="margin-right: 1rem;">Bienvenido, {{ user.username }}</span>
+                <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" style="background:none; border:none; color:#bb86fc; cursor:pointer; padding:0; text-decoration:underline; font-size:inherit;">
+                        Cerrar Sesión
+                    </button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" style="margin-right: 1rem;">Iniciar Sesión</a>
+                <a href="{% url 'register' %}">Registrarse</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <div id="player-wrapper">
+        {% block player %}
+        <div class="persistent-player">
+            <p id="now-playing">Selecciona una canción</p>
+            <audio id="main-audio-player" controls preload="none"></audio>
+        </div>
+        {% endblock %}
+    </div>
+
+    {% block extra_scripts %}
+    <script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const audioPlayer = document.getElementById('main-audio-player');
+        const nowPlayingElem = document.getElementById('now-playing');
+
+        document.body.addEventListener('click', function(event) {
+            const songItem = event.target.closest('li[data-song-id]');
+            if (songItem) { 
+                const songId = songItem.dataset.songId;
+                const songName = songItem.dataset.songName;
+                const songUrl = `/play/${songId}/`;
+
+                nowPlayingElem.textContent = `Reproduciendo: ${songName}`;
+                audioPlayer.src = songUrl;
+                audioPlayer.load();
+                audioPlayer.play(); 
+            }
+        });
+    });
+
+    document.body.addEventListener('htmx:beforeRequest', function(event) {
+
+        if (event.detail.elt.id !== 'scan-button') {
+            Swal.fire({
+                title: 'Cargando...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+    });
+
+
+    document.body.addEventListener('htmx:afterRequest', function(event) {
+        Swal.close();
+
+        if (event.detail.elt.id === 'scan-button' && event.detail.xhr.status === 200) {
+            const response = JSON.parse(event.detail.xhr.responseText);
+            const taskId = response.task_id;
+            if (taskId) {
+                pollTaskStatus(taskId); 
+            }
+        }
+    });
+
+    function pollTaskStatus(taskId) {
+        Swal.fire({
+            title: 'Iniciando escaneo...',
+            text: 'Por favor, espera.',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        const interval = setInterval(() => {
+            fetch(`/task-status/${taskId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'PROGRESS') {
+                        const progressText = `Procesando lote ${data.info.current_batch} de ${data.info.total_batches}...`;
+                        Swal.update({
+                            title: 'Escaneando tu librería...',
+                            text: progressText,
+                        });
+                        Swal.showLoading();
+                    } else if (data.status === 'SUCCESS') {
+                        clearInterval(interval);
+                        Swal.fire({
+                            title: '¡Éxito!',
+                            text: data.info,
+                            icon: 'success',
+                            confirmButtonText: 'Ir a mi librería'
+                        }).then(() => {
+                            window.location.href = "{% url 'artist_list' %}";
+                        });
+                    } else if (data.status === 'FAILURE') {
+                        clearInterval(interval);
+                        Swal.fire({
+                            title: '¡Error!',
+                            text: 'Ocurrió un error durante el escaneo.',
+                            icon: 'error',
+                            confirmButtonText: 'Entendido'
+                        });
+                    }
+                })
+                .catch(error => {
+                    clearInterval(interval);
+                    Swal.fire('Error de conexión', 'No se pudo obtener el estado del escaneo.', 'error');
+                });
+        }, 3000);
+    }
+    </script>
+    {% endblock %}
+
+</body>
+</html>

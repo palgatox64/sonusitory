@@ -1,0 +1,24 @@
+{% extends request.htmx|yesno:"_base_empty.html,base.html" %}
+
+{% block content %}
+    <h1>Selecciona tu Carpeta de Música</h1>
+    <p>Haz clic en la carpeta que contiene toda tu música. Esto iniciará el escaneo de la librería.</p>
+    <div class="action-bar">
+        <p>
+            <a href="{% url 'artist_list' %}" hx-get="{% url 'artist_list' %}" hx-target=".main-content" hx-push-url="true" class="btn">Volver a la lista de artistas</a>
+        </p>
+    </div>
+    {% if folders %}
+        <div class="artist-list">
+            {% for folder in folders %}
+                <a href="{% url 'set_folder' folder_id=folder.id %}">
+                    📁 {{ folder.name }}
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No se encontraron carpetas en la raíz de tu Google Drive.</p>
+    {% endif %}
+{% endblock %}
+
+{% block player %}{% endblock %}

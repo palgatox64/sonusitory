@@ -1,0 +1,30 @@
+{% extends request.htmx|yesno:"_base_empty.html,base.html" %}
+
+{% block content %}
+    <h1>{{ album.name }}</h1>
+    <h2>por {{ album.artist.name }}</h2>
+
+    <div class="action-bar">
+        <p>
+            <a href="{% url 'artist_detail' artist_id=album.artist.id %}" hx-get="{% url 'artist_detail' artist_id=album.artist.id %}" hx-target=".main-content" hx-push-url="true" class="btn">Volver a los álbumes de {{ album.artist.name }}</a>
+        </p>
+    </div>
+
+    {% if songs %}
+        <ul id="song-list">
+            {% for song in songs %}
+                <li
+                    data-song-id="{{ song.google_file_id }}"
+                    data-song-name="{{ song.title }}">
+
+                    {% if song.track_number %}
+                        <span style="display: inline-block; width: 30px; text-align: right; margin-right: 10px;">{{ song.track_number }}.</span>
+                    {% endif %}
+                    {{ song.title }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No se encontraron canciones para este álbum.</p>
+    {% endif %}
+{% endblock %}
