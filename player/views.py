@@ -1,5 +1,4 @@
-
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import StreamingHttpResponse, HttpResponse, Http404
 from django.contrib.auth.decorators import login_required
 from google_auth_oauthlib.flow import Flow
@@ -10,6 +9,7 @@ from .models import UserProfile, GoogleCredential, Artist, Album, Song
 from django.http import JsonResponse
 from .tasks import scan_user_library
 from celery.result import AsyncResult
+from django.templatetags.static import static
 import os
 import io
 import json
@@ -116,6 +116,38 @@ def album_detail(request, album_id):
     context = {'album': album, 'songs': songs}
     return render(request, 'player/album_detail.html', context)
 
+
+@login_required
+def album_cover(request, album_id):
+    album = get_object_or_404(Album, id=album_id, user=request.user)
+    
+    if not album.cover_image_id:
+        return redirect(static('images/default_cover.png'))
+
+    try:
+        creds_model = GoogleCredential.objects.get(user=request.user)
+        creds = Credentials.from_authorized_user_info(json.loads(creds_model.token_json))
+    except GoogleCredential.DoesNotExist:
+        return redirect(static('images/default_cover.png'))
+        
+    service = build('drive', 'v3', credentials=creds)
+    
+    try:
+        file_metadata = service.files().get(fileId=album.cover_image_id, fields='mimeType').execute()
+        mime_type = file_metadata.get('mimeType', 'image/jpeg')
+        
+        request_download = service.files().get_media(fileId=album.cover_image_id)
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request_download)
+        
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+            
+        fh.seek(0)
+        return HttpResponse(fh.read(), content_type=mime_type)
+    except Exception:
+        return redirect(static('images/default_cover.png'))
 
 
 @login_required

@@ -121,12 +121,25 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === 'PROGRESS') {
-                        const progressText = `Procesando lote ${data.info.current_batch} de ${data.info.total_batches}...`;
+                        let title = 'Escaneando tu librería...';
+                        let progressText = 'Preparando...';
+                        
+                        if (data.info && data.info.step) {
+                            if (data.info.step === 'songs') {
+                                title = 'Paso 1 de 2: Procesando canciones...';
+                                progressText = `Procesando lote ${data.info.current} de ${data.info.total}`;
+                            } else if (data.info.step === 'covers') {
+                                title = 'Paso 2 de 2: Buscando portadas...';
+                                progressText = `Analizando álbum ${data.info.current} de ${data.info.total}`;
+                            }
+                        }
+                        
                         Swal.update({
-                            title: 'Escaneando tu librería...',
+                            title: title,
                             text: progressText,
                         });
                         Swal.showLoading();
+
                     } else if (data.status === 'SUCCESS') {
                         clearInterval(interval);
                         Swal.fire({
