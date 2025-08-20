@@ -118,10 +118,9 @@ a:hover {
     transition: all 250ms;
     overflow: hidden;
     cursor: pointer;
-    box-sizing: border-box; /* <- AÑADE ESTA LÍNEA */
+    box-sizing: border-box; 
 }
 
-/* ... (resto del archivo css sin cambios) ... */
 
 .btn::before {
     content: "";
@@ -359,4 +358,40 @@ a:hover {
 
 .btn.btn-danger::before {
     background-color: #d33;
+}
+
+
+#song-list li {
+    position: relative; 
+}
+
+.queue-add-btn {
+    display: none; 
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(255, 255, 255, 0.1);
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.queue-add-btn img {
+    width: 16px;
+    height: 16px;
+}
+
+.queue-add-btn:hover {
+    background-color: #bb86fc;
+}
+
+#song-list.playback-active li:hover .queue-add-btn {
+    display: flex;
 }

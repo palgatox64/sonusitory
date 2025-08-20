@@ -1,4 +1,5 @@
 {% extends request.htmx|yesno:"_base_empty.html,base.html" %}
+{% load static %}
 
 {% block content %}
     <div style="display: flex; align-items: flex-end; gap: 20px; margin-bottom: 2rem;">
@@ -33,6 +34,10 @@
                         <span style="display: inline-block; width: 30px; text-align: right; margin-right: 10px;">{{ song.track_number }}.</span>
                     {% endif %}
                     {{ song.title }}
+                
+                    <button class="queue-add-btn" title="Añadir a la cola">
+                        <img src="{% static 'images/queue_icon.png' %}" alt="Añadir a la cola">
+                    </button>
                 </li>
             {% endfor %}
         </ul>
