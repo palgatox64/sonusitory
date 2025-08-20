@@ -195,3 +195,66 @@ a:hover {
     margin: 0;
     list-style-type: none;
 }
+
+/* --- ESTILOS PARA LOGIN CON PROVEEDORES --- */
+.login-providers {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Espacio entre los botones */
+}
+
+.provider-login-button {
+    display: block;
+    padding: 15px 25px;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+}
+
+/* --- ESTILOS PARA LOGIN CON PROVEEDORES --- */
+.login-providers {
+    margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Espacio entre los botones */
+}
+
+.provider-login-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px; /* Espacio entre el icono y el texto */
+    padding: 15px 25px;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+}
+
+.provider-login-button:hover {
+    text-decoration: none;
+    color: white;
+    filter: brightness(110%); 
+}
+
+
+.provider-login-button.google { background-color: #4285F4; }
+.provider-login-button.onedrive { background-color: #0078D4; }
+.provider-login-button.dropbox { background-color: #0061FF; }
+
+/* Estilo para los botones deshabilitados */
+.provider-login-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}

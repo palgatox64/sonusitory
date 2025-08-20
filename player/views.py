@@ -34,7 +34,7 @@ def google_login(request):
         prompt='consent'
     )
     context = {'auth_url': authorization_url}
-    return render(request, 'player/google_login.html', context)
+    return render(request, 'player/cloud_login.html', context)
 
 @login_required
 def google_callback(request):
@@ -59,14 +59,16 @@ def select_folder(request):
         creds_model = GoogleCredential.objects.get(user=request.user)
         creds = Credentials.from_authorized_user_info(json.loads(creds_model.token_json))
     except GoogleCredential.DoesNotExist:
-
         return redirect('google_login')
         
     service = build('drive', 'v3', credentials=creds)
     query = "mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false"
     results = service.files().list(q=query, fields="files(id, name)").execute()
     folders = results.get('files', [])
-    context = {'folders': folders}
+    
+    base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
+    
+    context = {'folders': folders, 'base_template': base_template}
     return render(request, 'player/select_folder.html', context)
 
 @login_required
@@ -93,7 +95,11 @@ def artist_list(request):
     except UserProfile.DoesNotExist:
         return redirect('select_folder')
     artists = Artist.objects.filter(user=request.user).order_by('name')
-    context = {'artists': artists}
+    
+    # Lógica para determinar la plantilla base
+    base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
+
+    context = {'artists': artists, 'base_template': base_template}
     return render(request, 'player/artist_list.html', context)
 
 @login_required
@@ -101,19 +107,24 @@ def artist_detail(request, artist_id):
     artist = Artist.objects.get(id=artist_id, user=request.user)
     albums = Album.objects.filter(artist=artist, user=request.user).order_by('name')
     
+    base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
+    
     context = {
         'artist': artist,
-        'albums': albums
+        'albums': albums,
+        'base_template': base_template
     }
     return render(request, 'player/artist_detail.html', context)
 
 @login_required
 def album_detail(request, album_id):
-
     album = Album.objects.get(id=album_id, user=request.user)
-
     songs = Song.objects.filter(album=album, user=request.user).order_by('track_number', 'name')
-    context = {'album': album, 'songs': songs}
+    
+    # Lógica para determinar la plantilla base
+    base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
+    
+    context = {'album': album, 'songs': songs, 'base_template': base_template}
     return render(request, 'player/album_detail.html', context)
 
 
