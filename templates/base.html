@@ -24,12 +24,18 @@
 <body>
 
     <nav style="padding: 1rem 2rem; background-color: #181818; border-bottom: 1px solid #282828; display: flex; justify-content: space-between; align-items: center;">
-        <a href="{% url 'artist_list' %}"
-            hx-get="{% url 'artist_list' %}"
-            hx-target=".main-content"
-            hx-push-url="true">
+        
+        {% if request.resolver_match.url_name == 'login' or request.resolver_match.url_name == 'register' %}
             <img src="{% static 'images/sonusitory_with_icon.png' %}" alt="Sonusitory" style="height: 40px;">
-        </a>
+        {% else %}
+            <a href="{% url 'artist_list' %}"
+                hx-get="{% url 'artist_list' %}"
+                hx-target=".main-content"
+                hx-push-url="true">
+                <img src="{% static 'images/sonusitory_with_icon.png' %}" alt="Sonusitory" style="height: 40px;">
+            </a>
+        {% endif %}
+        
         <div>
             {% if user.is_authenticated %}
                 <div class="dropdown">
