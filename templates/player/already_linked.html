@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    Swal.fire({
+        title: '¡Ya estás vinculado!',
+        text: 'No puedes vincular una nueva nube. Primero, desvincula la actual desde los ajustes de tu cuenta.',
+        icon: 'error',
+        confirmButtonText: 'Entendido'
+    }).then(() => {
+        window.location.href = "{% url 'artist_list' %}";
+    });
+});
+</script>
+{% endblock %}

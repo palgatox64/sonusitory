@@ -92,8 +92,6 @@
         }
     }
 
-    // --- INICIO: CAMBIO ---
-    // He movido la lógica del botón a su propia función para poder llamarla cuando sea necesario.
     function initializeAccountButtonListener() {
         const accountUnlinkButton = document.getElementById('account-unlink-button');
         if (accountUnlinkButton) {
@@ -128,12 +126,11 @@
             });
         }
     }
-    // --- FIN: CAMBIO ---
 
 
     document.addEventListener('DOMContentLoaded', function() {
         updateUserMenuVisibility();
-        initializeAccountButtonListener(); // Llamamos a la función en la carga inicial
+        initializeAccountButtonListener(); 
         
         const audioPlayer = document.getElementById('main-audio-player');
         const nowPlayingElem = document.getElementById('now-playing');
@@ -182,7 +179,7 @@
 
     document.body.addEventListener('htmx:afterOnLoad', function() {
         updateUserMenuVisibility(); 
-        initializeAccountButtonListener(); // Y también la llamamos después de que HTMX cargue contenido
+        initializeAccountButtonListener(); 
     });
 
     function pollTaskStatus(taskId) {
@@ -208,7 +205,7 @@
                                 progressText = `Procesando lote ${data.info.current} de ${data.info.total}`;
                             } else if (data.info.step === 'covers') {
                                 title = 'Paso 2 de 2: Buscando portadas...';
-                                progressText = `Analizando álbum ${data.info.current} de ${data.info.total}`;
+                                progressText = `Analizando carpeta ${data.info.current} de ${data.info.total}`;
                             }
                         }
 

@@ -22,6 +22,8 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 @login_required
 def google_login(request):
+    if GoogleCredential.objects.filter(user=request.user).exists():
+        return render(request, 'player/already_linked.html')
 
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE,
@@ -35,7 +37,6 @@ def google_login(request):
     )
     context = {'auth_url': authorization_url}
     
-    # Lógica para servir la plantilla correcta
     if request.htmx:
         return render(request, 'player/partials/cloud_login_content.html', context)
         
