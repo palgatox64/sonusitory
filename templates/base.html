@@ -43,7 +43,11 @@
                         <img src="{% static 'images/default_avatar.jpg' %}" alt="Menú de usuario" class="user-avatar">
                     </button>
                     <div class="dropdown-menu" id="user-menu">
-                        <a id="unlink-button" href="{% url 'unlink_service' %}" class="btn">Desvincular nube</a>
+                        
+                        {% if user.userprofile.google_drive_root_id %}
+                            <a id="unlink-button" href="{% url 'unlink_service' %}" class="btn">Desvincular nube</a>
+                        {% endif %}
+                            
                         <form action="{% url 'logout' %}" method="post" style="margin: 0;">
                             {% csrf_token %}
                             <button type="submit" class="btn">
