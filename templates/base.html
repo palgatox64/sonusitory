@@ -40,7 +40,7 @@
             {% if user.is_authenticated %}
                 <div class="dropdown">
                     <button class="dropdown-toggle-btn" id="user-menu-toggle">
-                        <img src="{% static 'images/default_avatar.jpg' %}" alt="Menú de usuario" class="user-avatar">
+                        <img src="{% if user.userprofile.avatar_url %}{{ user.userprofile.avatar_url }}{% else %}{% static 'images/default_avatar.jpg' %}{% endif %}" alt="Menú de usuario" class="user-avatar">
                     </button>
                     <div class="dropdown-menu" id="user-menu">
                         <a href="{% url 'account' %}" hx-get="{% url 'account' %}" hx-target=".main-content" hx-push-url="true" class="btn">Cuenta</a>
@@ -81,6 +81,79 @@
     {% block extra_scripts %}
     <script>
     
+    function initializeAvatarUpload() {
+    const changeAvatarButton = document.getElementById('change-avatar-button');
+    if (!changeAvatarButton) return;
+
+    const avatarInput = document.getElementById('avatar-input');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const originalAvatarSrc = avatarPreview.src;
+
+    changeAvatarButton.addEventListener('click', () => {
+        avatarInput.click();
+    });
+
+    avatarInput.addEventListener('change', () => {
+        const file = avatarInput.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+
+            avatarPreview.src = e.target.result;
+
+            Swal.fire({
+                title: "¿Quieres guardar este cambio?",
+                imageUrl: e.target.result,
+                imageHeight: 150,
+                imageAlt: 'Previsualización',
+                showCancelButton: true,
+                confirmButtonText: "Guardar",
+                cancelButtonText: "Cancelar",
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('avatar', file);
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+
+                    Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                    fetch("{% url 'upload_avatar' %}", {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-CSRFToken': csrfToken }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.avatar_url) {
+                            avatarPreview.src = data.avatar_url;
+                            const userAvatarInNav = document.querySelector('.user-avatar');
+                            if (userAvatarInNav) userAvatarInNav.src = data.avatar_url;
+                            Swal.fire('¡Guardado!', 'Tu nueva foto de perfil ha sido guardada.', 'success');
+                        } else {
+                            Swal.fire('¡Error!', data.error || 'No se pudo subir la imagen.', 'error');
+                            avatarPreview.src = originalAvatarSrc;
+                        }
+                    })
+                    .catch(() => {
+                        Swal.fire('¡Error!', 'Ocurrió un error de red.', 'error');
+                        avatarPreview.src = originalAvatarSrc;
+                    });
+
+                } else {
+                    avatarPreview.src = originalAvatarSrc;
+                    Swal.fire("Cancelado", "Tu foto de perfil no ha cambiado.", "info");
+                }
+            });
+        };
+        reader.readAsDataURL(file);
+        
+        avatarInput.value = '';
+    });
+    }
+
     function updateUserMenuVisibility() {
         const userMenuDropdown = document.querySelector('.dropdown');
         if (userMenuDropdown) {
@@ -131,6 +204,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         updateUserMenuVisibility();
         initializeAccountButtonListener(); 
+        initializeAvatarUpload();
         
         const audioPlayer = document.getElementById('main-audio-player');
         const nowPlayingElem = document.getElementById('now-playing');
@@ -146,6 +220,22 @@
                 audioPlayer.src = songUrl;
                 audioPlayer.load();
                 audioPlayer.play();
+            }
+        });
+        
+        const userMenuToggle = document.getElementById('user-menu-toggle');
+        const userMenu = document.getElementById('user-menu');
+
+        if (userMenuToggle) {
+            userMenuToggle.addEventListener('click', function(event) {
+                event.stopPropagation();
+                userMenu.classList.toggle('show');
+            });
+        }
+
+        window.addEventListener('click', function(event) {
+            if (userMenu && userMenu.classList.contains('show')) {
+                userMenu.classList.remove('show');
             }
         });
     });
@@ -180,6 +270,7 @@
     document.body.addEventListener('htmx:afterOnLoad', function() {
         updateUserMenuVisibility(); 
         initializeAccountButtonListener(); 
+        initializeAvatarUpload();
     });
 
     function pollTaskStatus(taskId) {
@@ -241,22 +332,6 @@
                 });
         }, 3000);
     }
-
-        const userMenuToggle = document.getElementById('user-menu-toggle');
-        const userMenu = document.getElementById('user-menu');
-
-        if (userMenuToggle) {
-            userMenuToggle.addEventListener('click', function(event) {
-                event.stopPropagation();
-                userMenu.classList.toggle('show');
-            });
-        }
-
-        window.addEventListener('click', function(event) {
-            if (userMenu && userMenu.classList.contains('show')) {
-                userMenu.classList.remove('show');
-            }
-        });
     </script>
     {% endblock %}
 

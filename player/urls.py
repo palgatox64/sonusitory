@@ -20,6 +20,7 @@ urlpatterns = [
     path('task-status/<str:task_id>/', views.task_status, name='task_status'),
     
     path('account/', views.account, name='account'),
+    path('upload-avatar/', views.upload_avatar, name='upload_avatar'),
     path('unlink-service/', views.unlink_service, name='unlink_service'),
     
 ]

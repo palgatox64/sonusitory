@@ -1,9 +1,12 @@
 {% load static %}
 <div style="text-align: center; padding-top: 3em; max-width: 600px; margin: auto;">
     <h1>{{ user.username }}</h1>
-    
+
     <div style="margin-top: 2rem; margin-bottom: 2rem;">
-        <img src="{% static 'images/default_avatar.jpg' %}" alt="Foto de perfil" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
+        <img id="avatar-preview" src="{% if user.userprofile.avatar_url %}{{ user.userprofile.avatar_url }}{% else %}{% static 'images/default_avatar.jpg' %}{% endif %}" alt="Foto de perfil" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
+        <br>
+        <input type="file" id="avatar-input" style="display: none;" accept="image/*">
+        <button id="change-avatar-button" class="btn" style="margin-top:1rem;">Cambiar Foto</button>
     </div>
 
     <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 280px; margin: 0 auto;">
@@ -17,7 +20,7 @@
            class="btn"
            data-has-credentials="{{ has_credentials|yesno:'true,false' }}"
            style="width: 100%;">
-           Desvincular nube
+           Desvincular Nube
         </a>
 
         <form action="{% url 'logout' %}" method="post" style="width: 100%; margin: 0;">

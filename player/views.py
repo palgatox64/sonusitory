@@ -13,6 +13,7 @@ from django.templatetags.static import static
 import os
 import io
 import json
+import requests
 
 
 CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(__file__), '..', 'credentials', 'client_secret.json')
@@ -53,6 +54,34 @@ def account(request):
         return render(request, 'player/partials/account_content.html', context)
         
     return render(request, 'player/account.html', context)
+
+@login_required
+def upload_avatar(request):
+    if request.method == 'POST' and request.FILES.get('avatar'):
+        client_id = os.environ.get('IMGUR_CLIENT_ID')
+        if not client_id:
+            return JsonResponse({'error': 'Imgur client ID not configured'}, status=500)
+
+        image = request.FILES['avatar']
+        
+        headers = {'Authorization': f'Client-ID {client_id}'}
+        
+        response = requests.post(
+            'https://api.imgur.com/3/image',
+            headers=headers,
+            files={'image': image}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            profile, _ = UserProfile.objects.get_or_create(user=request.user)
+            profile.avatar_url = data['data']['link']
+            profile.save()
+            return JsonResponse({'avatar_url': profile.avatar_url})
+        else:
+            return JsonResponse({'error': 'Failed to upload image to Imgur'}, status=500)
+
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @login_required
 def unlink_service(request):
