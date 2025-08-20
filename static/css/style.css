@@ -189,3 +189,9 @@ a:hover {
     width: 100%;
     margin-top: 1rem;
 }
+
+#song-list {
+    padding: 0;
+    margin: 0;
+    list-style-type: none;
+}

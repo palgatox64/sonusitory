@@ -23,7 +23,12 @@
 <body>
 
     <nav style="padding: 1rem 2rem; background-color: #181818; border-bottom: 1px solid #282828; display: flex; justify-content: space-between; align-items: center;">
-        <a href="/" style="font-weight: bold; font-size: 1.2rem; color: #ffffff;">Sonusitory</a>
+        <a href="{% url 'artist_list' %}" 
+            hx-get="{% url 'artist_list' %}" 
+            hx-target=".main-content" 
+            hx-push-url="true" 
+            style="font-weight: bold; font-size: 1.2rem; color: #ffffff;">Sonusitory
+        </a>
         <div>
             {% if user.is_authenticated %}
                 <span style="margin-right: 1rem;">Bienvenido, {{ user.username }}</span>
