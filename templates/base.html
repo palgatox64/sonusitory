@@ -24,18 +24,17 @@
 <body>
 
     <nav style="padding: 1rem 2rem; background-color: #181818; border-bottom: 1px solid #282828; display: flex; justify-content: space-between; align-items: center;">
-        <a href="{% url 'artist_list' %}" 
-            hx-get="{% url 'artist_list' %}" 
-            hx-target=".main-content" 
-            hx-push-url="true" 
-            style="font-weight: bold; font-size: 1.2rem; color: #ffffff;">Sonusitory
+        <a href="{% url 'artist_list' %}"
+            hx-get="{% url 'artist_list' %}"
+            hx-target=".main-content"
+            hx-push-url="true">
+            <img src="{% static 'images/sonusitory_with_icon.png' %}" alt="Sonusitory" style="height: 40px;">
         </a>
         <div>
             {% if user.is_authenticated %}
-                <span style="margin-right: 1rem;">Bienvenido, {{ user.username }}</span>
                 <div class="dropdown">
                     <button class="dropdown-toggle-btn" id="user-menu-toggle">
-                        <i class="fas fa-bars"></i>
+                        <img src="{% static 'images/default_avatar.jpg' %}" alt="Menú de usuario" class="user-avatar">
                     </button>
                     <div class="dropdown-menu" id="user-menu">
                         <a id="unlink-button" href="{% url 'unlink_service' %}" class="btn">Desvincular nube</a>
@@ -81,7 +80,7 @@
 
         document.body.addEventListener('click', function(event) {
             const songItem = event.target.closest('li[data-song-id]');
-            if (songItem) { 
+            if (songItem) {
                 const songId = songItem.dataset.songId;
                 const songName = songItem.dataset.songName;
                 const songUrl = `/play/${songId}/`;
@@ -89,7 +88,7 @@
                 nowPlayingElem.textContent = `Reproduciendo: ${songName}`;
                 audioPlayer.src = songUrl;
                 audioPlayer.load();
-                audioPlayer.play(); 
+                audioPlayer.play();
             }
         });
     });
@@ -116,7 +115,7 @@
             const response = JSON.parse(event.detail.xhr.responseText);
             const taskId = response.task_id;
             if (taskId) {
-                pollTaskStatus(taskId); 
+                pollTaskStatus(taskId);
             }
         }
     });
@@ -137,7 +136,7 @@
                     if (data.status === 'PROGRESS') {
                         let title = 'Escaneando tu librería...';
                         let progressText = 'Preparando...';
-                        
+
                         if (data.info && data.info.step) {
                             if (data.info.step === 'songs') {
                                 title = 'Paso 1 de 2: Procesando canciones...';
@@ -147,7 +146,7 @@
                                 progressText = `Analizando álbum ${data.info.current} de ${data.info.total}`;
                             }
                         }
-                        
+
                         Swal.update({
                             title: title,
                             text: progressText,
@@ -185,7 +184,7 @@
         if (unlinkButton) {
             unlinkButton.addEventListener('click', function(event) {
                 event.preventDefault();
-                
+
                 Swal.fire({
                     title: '¿Estás seguro?',
                     text: "Se borrarán todos tus datos de la librería (canciones, álbumes, artistas) y se desvinculará tu nube. ¡Pero puedes volver a vincular tu nube más tarde!",
