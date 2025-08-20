@@ -43,19 +43,16 @@
                         <img src="{% static 'images/default_avatar.jpg' %}" alt="Menú de usuario" class="user-avatar">
                     </button>
                     <div class="dropdown-menu" id="user-menu">
-                        
-                        {% if user.userprofile.google_drive_root_id %}
-                            <a id="unlink-button" href="{% url 'unlink_service' %}" class="btn">Desvincular nube</a>
-                        {% endif %}
-                            
+                        <a href="{% url 'account' %}" hx-get="{% url 'account' %}" hx-target=".main-content" hx-push-url="true" class="btn">Cuenta</a>
                         <form action="{% url 'logout' %}" method="post" style="margin: 0;">
                             {% csrf_token %}
-                            <button type="submit" class="btn">
+                            <button type="submit" class="btn btn-danger">
                                 Cerrar Sesión
                             </button>
                         </form>
                     </div>
                 </div>
+
             {% else %}
                 {% if request.resolver_match.url_name != 'login' %}
                     <a href="{% url 'login' %}" style="margin-right: 1rem;" class="btn">Iniciar Sesión</a>
@@ -83,8 +80,61 @@
 
     {% block extra_scripts %}
     <script>
+    
+    function updateUserMenuVisibility() {
+        const userMenuDropdown = document.querySelector('.dropdown');
+        if (userMenuDropdown) {
+            if (window.location.pathname === '/account/') {
+                userMenuDropdown.style.display = 'none';
+            } else {
+                userMenuDropdown.style.display = 'inline-block';
+            }
+        }
+    }
+
+    // --- INICIO: CAMBIO ---
+    // He movido la lógica del botón a su propia función para poder llamarla cuando sea necesario.
+    function initializeAccountButtonListener() {
+        const accountUnlinkButton = document.getElementById('account-unlink-button');
+        if (accountUnlinkButton) {
+            accountUnlinkButton.addEventListener('click', function(event) {
+                event.preventDefault(); 
+
+                const hasCredentials = event.target.dataset.hasCredentials === 'true';
+
+                if (hasCredentials) {
+                    Swal.fire({
+                        title: '¿Estás seguro?',
+                        text: "Se borrarán todos tus datos de la librería (canciones, álbumes, artistas) y se desvinculará tu nube. ¡Pero puedes volver a vincular tu nube más tarde!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Sí, ¡bórralo todo!',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = event.target.href;
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        title: '¡No hay nada que desvincular!',
+                        text: 'Actualmente no tienes ninguna cuenta de nube vinculada.',
+                        icon: 'info',
+                        confirmButtonText: 'Entendido'
+                    });
+                }
+            });
+        }
+    }
+    // --- FIN: CAMBIO ---
+
 
     document.addEventListener('DOMContentLoaded', function() {
+        updateUserMenuVisibility();
+        initializeAccountButtonListener(); // Llamamos a la función en la carga inicial
+        
         const audioPlayer = document.getElementById('main-audio-player');
         const nowPlayingElem = document.getElementById('now-playing');
 
@@ -128,6 +178,11 @@
                 pollTaskStatus(taskId);
             }
         }
+    });
+
+    document.body.addEventListener('htmx:afterOnLoad', function() {
+        updateUserMenuVisibility(); 
+        initializeAccountButtonListener(); // Y también la llamamos después de que HTMX cargue contenido
     });
 
     function pollTaskStatus(taskId) {
@@ -189,28 +244,6 @@
                 });
         }, 3000);
     }
-
-    const unlinkButton = document.getElementById('unlink-button');
-        if (unlinkButton) {
-            unlinkButton.addEventListener('click', function(event) {
-                event.preventDefault();
-
-                Swal.fire({
-                    title: '¿Estás seguro?',
-                    text: "Se borrarán todos tus datos de la librería (canciones, álbumes, artistas) y se desvinculará tu nube. ¡Pero puedes volver a vincular tu nube más tarde!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Sí, ¡bórralo todo!',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        window.location.href = event.target.href;
-                    }
-                });
-            });
-        }
 
         const userMenuToggle = document.getElementById('user-menu-toggle');
         const userMenu = document.getElementById('user-menu');

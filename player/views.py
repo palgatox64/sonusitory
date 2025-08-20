@@ -34,7 +34,24 @@ def google_login(request):
         prompt='consent'
     )
     context = {'auth_url': authorization_url}
+    
+    # Lógica para servir la plantilla correcta
+    if request.htmx:
+        return render(request, 'player/partials/cloud_login_content.html', context)
+        
     return render(request, 'player/cloud_login.html', context)
+
+@login_required
+def account(request):
+    has_credentials = GoogleCredential.objects.filter(user=request.user).exists()
+    context = {
+        'has_credentials': has_credentials
+    }
+    
+    if request.htmx:
+        return render(request, 'player/partials/account_content.html', context)
+        
+    return render(request, 'player/account.html', context)
 
 @login_required
 def unlink_service(request):

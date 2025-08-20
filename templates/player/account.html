@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% include 'player/partials/account_content.html' %}
+{% endblock %}
+
+{% block player %}
+    {% if has_credentials %}
+        {{ block.super }}
+    {% endif %}
+{% endblock %}

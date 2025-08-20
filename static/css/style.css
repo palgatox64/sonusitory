@@ -118,7 +118,10 @@ a:hover {
     transition: all 250ms;
     overflow: hidden;
     cursor: pointer;
+    box-sizing: border-box; /* <- AÑADE ESTA LÍNEA */
 }
+
+/* ... (resto del archivo css sin cambios) ... */
 
 .btn::before {
     content: "";
@@ -352,4 +355,8 @@ a:hover {
     100% {
         background-color: #282828;
     }
+}
+
+.btn.btn-danger::before {
+    background-color: #d33;
 }
