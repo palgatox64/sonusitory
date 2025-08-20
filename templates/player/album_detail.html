@@ -2,13 +2,19 @@
 
 {% block content %}
     <div style="display: flex; align-items: flex-end; gap: 20px; margin-bottom: 2rem;">
-        <img src="{% url 'album_cover' album_id=album.id %}" alt="Cover for {{ album.name }}" style="width: 150px; height: 150px; border-radius: 5px; object-fit: cover;">
+        <div style="width: 150px; height: 150px; position: relative;">
+            <div class="cover-placeholder" style="width: 150px; height: 150px; position: absolute;"></div>
+            <img 
+                src="{% url 'album_cover' album_id=album.id %}" 
+                alt="Cover for {{ album.name }}" 
+                style="width: 150px; height: 150px; border-radius: 5px; object-fit: cover; display: none; position: relative;"
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';">
+        </div>
         <div>
             <h1>{{ album.name }}</h1>
             <h2>por {{ album.artist.name }}</h2>
         </div>
     </div>
-
 
     <div class="action-bar">
         <p>

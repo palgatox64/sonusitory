@@ -332,3 +332,24 @@ a:hover {
     text-align: center;
     font-weight: 600;
 }
+
+.cover-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #282828;
+    border-radius: 5px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        background-color: #282828;
+    }
+    50% {
+        background-color: #404040;
+    }
+    100% {
+        background-color: #282828;
+    }
+}
