@@ -37,6 +37,21 @@ def google_login(request):
     return render(request, 'player/cloud_login.html', context)
 
 @login_required
+def unlink_service(request):
+    user = request.user
+
+    Song.objects.filter(user=user).delete()
+    Album.objects.filter(user=user).delete()
+    Artist.objects.filter(user=user).delete()
+    
+    # Borrar credenciales y perfil
+    GoogleCredential.objects.filter(user=user).delete()
+    UserProfile.objects.filter(user=user).delete()
+    
+
+    return redirect('google_login')
+
+@login_required
 def google_callback(request):
 
     flow = Flow.from_client_secrets_file(

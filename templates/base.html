@@ -33,12 +33,20 @@
         <div>
             {% if user.is_authenticated %}
                 <span style="margin-right: 1rem;">Bienvenido, {{ user.username }}</span>
-                <form action="{% url 'logout' %}" method="post" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn">
-                        Cerrar Sesión
+                <div class="dropdown">
+                    <button class="dropdown-toggle-btn" id="user-menu-toggle">
+                        <i class="fas fa-bars"></i>
                     </button>
-                </form>
+                    <div class="dropdown-menu" id="user-menu">
+                        <a id="unlink-button" href="{% url 'unlink_service' %}" class="btn">Desvincular nube</a>
+                        <form action="{% url 'logout' %}" method="post" style="margin: 0;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn">
+                                Cerrar Sesión
+                            </button>
+                        </form>
+                    </div>
+                </div>
             {% else %}
                 {% if request.resolver_match.url_name != 'login' %}
                     <a href="{% url 'login' %}" style="margin-right: 1rem;" class="btn">Iniciar Sesión</a>
@@ -172,6 +180,44 @@
                 });
         }, 3000);
     }
+
+    const unlinkButton = document.getElementById('unlink-button');
+        if (unlinkButton) {
+            unlinkButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: "Se borrarán todos tus datos de la librería (canciones, álbumes, artistas) y se desvinculará tu nube. ¡Pero puedes volver a vincular tu nube más tarde!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Sí, ¡bórralo todo!',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = event.target.href;
+                    }
+                });
+            });
+        }
+
+        const userMenuToggle = document.getElementById('user-menu-toggle');
+        const userMenu = document.getElementById('user-menu');
+
+        if (userMenuToggle) {
+            userMenuToggle.addEventListener('click', function(event) {
+                event.stopPropagation();
+                userMenu.classList.toggle('show');
+            });
+        }
+
+        window.addEventListener('click', function(event) {
+            if (userMenu && userMenu.classList.contains('show')) {
+                userMenu.classList.remove('show');
+            }
+        });
     </script>
     {% endblock %}
 
