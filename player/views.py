@@ -127,25 +127,27 @@ def album_cover(request, album_id):
     try:
         creds_model = GoogleCredential.objects.get(user=request.user)
         creds = Credentials.from_authorized_user_info(json.loads(creds_model.token_json))
-    except GoogleCredential.DoesNotExist:
-        return redirect(static('images/default_cover.png'))
+        service = build('drive', 'v3', credentials=creds)
         
-    service = build('drive', 'v3', credentials=creds)
-    
-    try:
-        file_metadata = service.files().get(fileId=album.cover_image_id, fields='mimeType').execute()
-        mime_type = file_metadata.get('mimeType', 'image/jpeg')
+        file_metadata = service.files().get(
+            fileId=album.cover_image_id, 
+            fields='thumbnailLink'
+        ).execute()
+
+        thumbnail_link = file_metadata.get('thumbnailLink')
         
-        request_download = service.files().get_media(fileId=album.cover_image_id)
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fh, request_download)
-        
-        done = False
-        while done is False:
-            status, done = downloader.next_chunk()
-            
-        fh.seek(0)
-        return HttpResponse(fh.read(), content_type=mime_type)
+        if thumbnail_link:
+            return redirect(thumbnail_link)
+        else:
+            request_download = service.files().get_media(fileId=album.cover_image_id)
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request_download)
+            done = False
+            while not done:
+                status, done = downloader.next_chunk()
+            fh.seek(0)
+            return HttpResponse(fh.read(), content_type='image/jpeg')
+
     except Exception:
         return redirect(static('images/default_cover.png'))
 
