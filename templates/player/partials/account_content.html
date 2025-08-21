@@ -9,8 +9,7 @@
         <button id="change-avatar-button" class="btn" style="margin-top:1rem;">Cambiar Foto</button>
     </div>
 
-    <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 280px; margin: 0 auto;">
-        
+    <div class="account-buttons" style="display: flex; flex-direction: column; align-items: center; gap: 1rem; width: 280px; margin: 0 auto; margin-bottom: 1rem;">
         <a href="{% url 'artist_list' %}" hx-get="{% url 'artist_list' %}" hx-target=".main-content" hx-push-url="true" class="btn" style="width: 100%;">
             Ir a mi Librería
         </a>
@@ -30,5 +29,4 @@
             </button>
         </form>
     </div>
-</div>
 </div>

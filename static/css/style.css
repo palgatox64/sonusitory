@@ -26,10 +26,10 @@ a:hover {
 
 
 .main-content {
-
     padding: 1rem;
     max-width: 960px;
     margin: 0 auto;
+    padding-bottom: 80px; 
 }
 
 
@@ -63,6 +63,7 @@ a:hover {
     border-top: 1px solid #282828;
     padding: 15px;
     box-sizing: border-box;
+    z-index: 1000; 
 }
 
 #now-playing {
@@ -80,8 +81,20 @@ a:hover {
 
 @media (min-width: 768px) {
     .main-content {
-
         padding: 2rem;
+        padding-bottom: 80px;
+    }
+}
+
+
+@media (max-width: 767px) {
+    .main-content {
+        padding: 1rem;
+        padding-bottom: 100px;
+    }
+    
+    .account-buttons {
+        margin-bottom: 1rem;
     }
 }
 
@@ -222,7 +235,7 @@ a:hover {
     text-align: center;
 }
 
-.login-providers {
+login-providers {
     margin-top: 2rem;
     display: flex;
     flex-direction: column;
