@@ -199,6 +199,52 @@
     }
 
 
+    function initializeSongMenuListeners() {
+        document.body.addEventListener('click', function(event) {
+            const menuButton = event.target.closest('.song-menu-btn');
+            if (!menuButton) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            const parentLi = menuButton.closest('li');
+            const dropdown = menuButton.nextElementSibling;
+            const isAlreadyOpen = parentLi.classList.contains('menu-open');
+
+
+            document.querySelectorAll('#song-list li.menu-open').forEach(openLi => {
+                openLi.classList.remove('menu-open');
+                openLi.querySelector('.song-menu-dropdown').classList.remove('show');
+                openLi.querySelector('.song-menu-btn').classList.remove('is-visible');
+            });
+
+            if (!isAlreadyOpen) {
+                parentLi.classList.add('menu-open');
+                dropdown.classList.add('show');
+                menuButton.classList.add('is-visible');
+            }
+        });
+    }
+
+    window.addEventListener('click', function(event) {
+
+        if (!event.target.closest('.song-menu-container')) {
+            document.querySelectorAll('#song-list li.menu-open').forEach(openLi => {
+                openLi.classList.remove('menu-open');
+                openLi.querySelector('.song-menu-dropdown').classList.remove('show');
+                openLi.querySelector('.song-menu-btn').classList.remove('is-visible');
+            });
+        }
+
+        const userMenu = document.getElementById('user-menu');
+        if (userMenu && !event.target.closest('#user-menu-toggle')) {
+            if (userMenu.classList.contains('show')) {
+                userMenu.classList.remove('show');
+            }
+        }
+    });
+
+
     document.addEventListener('DOMContentLoaded', function() {
         const audioPlayer = document.getElementById('main-audio-player');
         const nowPlayingElem = document.getElementById('now-playing');
@@ -218,9 +264,8 @@
 
                 if (queueButton) {
                     event.stopPropagation();
-                    const parentLi = queueButton.closest('li[data-song-id]');
-                    const songId = parentLi.dataset.songId;
-                    const songName = parentLi.dataset.songName;
+                    const songId = queueButton.dataset.songId;
+                    const songName = queueButton.dataset.songName;
                     songQueue.push({ id: songId, name: songName });
 
                     const Toast = Swal.mixin({
@@ -231,8 +276,8 @@
                         }
                     });
                     Toast.fire({ icon: 'success', title: `'${songName}' añadida a la cola` });
-
-                } else if (songItem) {
+                
+                } else if (songItem && !event.target.closest('.song-menu-container')) {
                     const songId = songItem.dataset.songId;
                     const songName = songItem.dataset.songName;
                     playSong(songId, songName);
@@ -259,6 +304,7 @@
         updateUserMenuVisibility();
         initializeAccountButtonListener();
         initializeAvatarUpload();
+        initializeSongMenuListeners();
         
         const userMenuToggle = document.getElementById('user-menu-toggle');
         const userMenu = document.getElementById('user-menu');
@@ -270,11 +316,7 @@
             });
         }
 
-        window.addEventListener('click', function(event) {
-            if (userMenu && userMenu.classList.contains('show')) {
-                userMenu.classList.remove('show');
-            }
-        });
+
     });
 
     document.body.addEventListener('htmx:beforeRequest', function(event) {
@@ -301,6 +343,7 @@
         updateUserMenuVisibility();
         initializeAccountButtonListener();
         initializeAvatarUpload();
+        initializeSongMenuListeners();
         
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');

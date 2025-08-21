@@ -35,10 +35,20 @@
                     {% endif %}
                     {{ song.title }}
                 
-                    <button class="queue-add-btn" title="Añadir a la cola">
-                        <img src="{% static 'images/queue_icon.png' %}" alt="Añadir a la cola">
-                    </button>
-                </li>
+                    <div class="song-menu-container">
+                        <button class="song-menu-btn" title="Más opciones">
+                            <i class="fas fa-ellipsis-v"></i> </button>
+                        <div class="song-menu-dropdown">
+                            <button class="queue-add-btn" 
+                                    title="Añadir a la cola"
+                                    data-song-id="{{ song.google_file_id }}"
+                                    data-song-name="{{ song.title }}">
+                                <img src="{% static 'images/queue_icon.png' %}" alt="Añadir a la cola" style="width: 16px; height: 16px;">
+                                <span>Añadir a la cola</span>
+                            </button>
+                            </div>
+                    </div>
+                    </li>
             {% endfor %}
         </ul>
     {% else %}

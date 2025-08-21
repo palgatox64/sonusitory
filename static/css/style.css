@@ -405,6 +405,78 @@ login-providers {
     background-color: #bb86fc;
 }
 
-#song-list.playback-active li:hover .queue-add-btn {
+
+
+.song-menu-container {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+
+.song-menu-btn {
+    display: none;
+    background-color: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+#song-list li:hover .song-menu-btn,
+.song-menu-btn.is-visible {
     display: flex;
+}
+
+.song-menu-btn:hover {
+    background-color: #bb86fc;
+}
+
+.song-menu-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 40px;
+    background-color: #282828;
+    min-width: 200px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
+    z-index: 10;
+    border-radius: 4px;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.song-menu-dropdown.show {
+    display: block;
+}
+
+.song-menu-dropdown .queue-add-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    padding: 20px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.song-menu-dropdown .queue-add-btn:hover {
+    background-color: #404040; 
+    color: #ffffff;
+}
+
+#song-list li.menu-open {
+    z-index: 2;
 }
