@@ -480,3 +480,8 @@ login-providers {
 #song-list li.menu-open {
     z-index: 2;
 }
+
+.login-providers .btn {
+    width: 100%;
+    margin: 0;
+}

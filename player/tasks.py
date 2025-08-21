@@ -19,7 +19,7 @@ def clean_and_extract_metadata(filename):
     return track_num, clean_title
 
 @shared_task(bind=True)
-def scan_user_library(self, user_id):
+def scan_user_library(self, user_id, quick_scan=False):
     try:
         user = User.objects.get(id=user_id)
         creds_model = GoogleCredential.objects.get(user=user)
@@ -53,12 +53,17 @@ def scan_user_library(self, user_id):
     folder_cache = {}
     songs_created_count = 0
     album_folders_with_songs = set()
+    new_album_folder_ids = set()
 
     print("Buscando y procesando archivos de audio...")
     total_folders = len(all_folder_ids)
     batch_size = 20
     total_song_batches = (total_folders + batch_size - 1) // batch_size
     
+    if quick_scan:
+        existing_file_ids = set(Song.objects.filter(user=user).values_list('google_file_id', flat=True))
+        print(f"Búsqueda rápida: Se omitirán {len(existing_file_ids)} canciones existentes.")
+
     for i in range(0, total_folders, batch_size):
         current_batch_num = (i // batch_size) + 1
         self.update_state(state='PROGRESS', meta={'step': 'songs', 'current': current_batch_num, 'total': total_song_batches})
@@ -72,6 +77,9 @@ def scan_user_library(self, user_id):
             try:
                 results = service.files().list(q=audio_query, pageSize=1000, fields="nextPageToken, files(id, name, mimeType, parents)", pageToken=page_token).execute()
                 for file_data in results.get('files', []):
+                    if quick_scan and file_data.get('id') in existing_file_ids:
+                        continue
+                        
                     try:
                         album_folder_id = file_data['parents'][0]
                         album_folders_with_songs.add(album_folder_id)
@@ -97,12 +105,14 @@ def scan_user_library(self, user_id):
                                 'name': file_data.get('name'), 
                                 'title': clean_title, 
                                 'track_number': track_num, 
-                                'mime_type': file_data.get('mime_type', 'application/octet-stream'), # <-- FIX: Added default value
+                                'mime_type': file_data.get('mime_type', 'application/octet-stream'),
                                 'artist': artist_obj, 
                                 'album': album_obj
                             }
                         )
-                        if created: songs_created_count += 1
+                        if created:
+                            songs_created_count += 1
+                            new_album_folder_ids.add(album_folder_id)
                     except Exception as e:
                         print(f"Error procesando archivo {file_data.get('name')}: {e}")
                 
@@ -112,22 +122,28 @@ def scan_user_library(self, user_id):
                 print(f"Error de API en lote de audio {current_batch_num}: {e}")
                 break
 
-    print(f"Buscando portadas en {len(album_folders_with_songs)} carpetas de álbumes...")
-    covers_found_count = 0
-    total_album_folders = len(album_folders_with_songs)
+    folders_to_scan_for_covers = new_album_folder_ids if quick_scan else album_folders_with_songs
     
-    for index, album_folder_id in enumerate(list(album_folders_with_songs)):
-        self.update_state(state='PROGRESS', meta={'step': 'covers', 'current': index + 1, 'total': total_album_folders})
-        try:
-            image_query = f"'{album_folder_id}' in parents and (mimeType='image/jpeg' or mimeType='image/png') and trashed=false"
-            results = service.files().list(q=image_query, pageSize=10, fields="files(id, name)").execute()
-            images = results.get('files', [])
-            if images:
-                cover_file = next((f for f in images if f.get('name', '').lower() in ['cover.jpg', 'cover.png', 'folder.jpg']), images[0])
-                album_meta = folder_cache.get(album_folder_id, {})
-                Album.objects.filter(user=user, name=album_meta.get('name')).update(cover_image_id=cover_file.get('id'))
-                covers_found_count += 1
-        except Exception as e:
-            print(f"Error buscando portada en carpeta {album_folder_id}: {e}")
+    if not folders_to_scan_for_covers:
+        print("No hay nuevas carpetas de álbum para buscar portadas.")
+        covers_found_count = 0
+    else:
+        print(f"Buscando portadas en {len(folders_to_scan_for_covers)} carpetas de álbumes...")
+        covers_found_count = 0
+        total_album_folders = len(folders_to_scan_for_covers)
+        
+        for index, album_folder_id in enumerate(list(folders_to_scan_for_covers)):
+            self.update_state(state='PROGRESS', meta={'step': 'covers', 'current': index + 1, 'total': total_album_folders})
+            try:
+                image_query = f"'{album_folder_id}' in parents and (mimeType='image/jpeg' or mimeType='image/png') and trashed=false"
+                results = service.files().list(q=image_query, pageSize=10, fields="files(id, name)").execute()
+                images = results.get('files', [])
+                if images:
+                    cover_file = next((f for f in images if f.get('name', '').lower() in ['cover.jpg', 'cover.png', 'folder.jpg', 'albumart.jpg']), images[0])
+                    album_meta = folder_cache.get(album_folder_id, {})
+                    Album.objects.filter(user=user, name=album_meta.get('name')).update(cover_image_id=cover_file.get('id'))
+                    covers_found_count += 1
+            except Exception as e:
+                print(f"Error buscando portada en carpeta {album_folder_id}: {e}")
 
     return f"¡Escaneo completado! Se crearon {songs_created_count} canciones nuevas y se encontraron {covers_found_count} portadas."

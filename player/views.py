@@ -144,8 +144,13 @@ def set_folder(request, folder_id):
 
 @login_required
 def scan_prompt(request):
-    return render(request, 'player/scan_prompt.html')
+    has_songs = Song.objects.filter(user=request.user).exists()
+    return render(request, 'player/scan_prompt.html', {'has_songs': has_songs})
 
+@login_required
+def start_quick_scan_task(request):
+    task = scan_user_library.delay(request.user.id, quick_scan=True)
+    return JsonResponse({'task_id': task.id})
 
 
 @login_required

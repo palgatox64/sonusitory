@@ -4,18 +4,35 @@
     <div style="text-align: center; padding-top: 5em;">
         <h1>¡Carpeta Seleccionada!</h1>
         <p>Has configurado tu carpeta de música con éxito.</p>
-        <p>Haz clic en el botón de abajo para iniciar el escaneo de tu librería. Este proceso puede tardar varios minutos.</p>
         
-        <button 
-            hx-post="{% url 'start_scan_task' %}" 
-            hx-swap="none"
-            hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-            class="btn"
-            id="scan-button">
-            Iniciar Escaneo
-        </button>
+        {% if has_songs %}
+        <p>Ahora puedes buscar nuevas canciones o volver a escanear toda tu librería.</p>
+        {% else %}
+        <p>Haz clic en el botón de abajo para iniciar el escaneo de tu librería. Este proceso puede tardar varios minutos.</p>
+        {% endif %}
+        
+        <div class="login-providers" style="max-width: 350px; margin-left: auto; margin-right: auto;">
+            <button 
+                hx-post="{% url 'start_scan_task' %}" 
+                hx-swap="none"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                class="btn"
+                id="scan-button">
+                Escanear Librería Completa
+            </button>
+    
+            {% if has_songs %}
+            <button 
+                hx-post="{% url 'start_quick_scan_task' %}" 
+                hx-swap="none"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                class="btn"
+                id="quick-scan-button">
+                Búsqueda Rápida de Nuevas Canciones
+            </button>
+            {% endif %}
+        </div>
     </div>
 {% endblock %}
 
 {% block player %}{% endblock %}
-
