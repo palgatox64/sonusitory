@@ -320,7 +320,7 @@
     });
 
     document.body.addEventListener('htmx:beforeRequest', function(event) {
-        if (event.detail.elt.id !== 'scan-button' && event.detail.elt.id !== 'quick-scan-button') {
+        if (event.detail.elt.id !== 'scan-button' && event.detail.elt.id !== 'quick-scan-button' && event.detail.elt.id !== 'cover-scan-button') {
             Swal.fire({
                 title: 'Cargando...',
                 allowOutsideClick: false,
@@ -332,7 +332,16 @@
 
     document.body.addEventListener('htmx:afterRequest', function(event) {
         Swal.close();
-        if ((event.detail.elt.id === 'scan-button' || event.detail.elt.id === 'quick-scan-button') && event.detail.xhr.status === 200) {
+        if ((event.detail.elt.id === 'scan-button' || event.detail.elt.id === 'quick-scan-button' || event.detail.elt.id === 'cover-scan-button') && event.detail.xhr.status === 200) {
+            const response = JSON.parse(event.detail.xhr.responseText);
+            const taskId = response.task_id;
+            if (taskId) pollTaskStatus(taskId);
+        }
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function(event) {
+        Swal.close();
+        if ((event.detail.elt.id === 'scan-button' || event.detail.elt.id === 'quick-scan-button' || event.detail.elt.id === 'cover-scan-button') && event.detail.xhr.status === 200) {
             const response = JSON.parse(event.detail.xhr.responseText);
             const taskId = response.task_id;
             if (taskId) pollTaskStatus(taskId);

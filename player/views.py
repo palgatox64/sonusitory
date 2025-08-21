@@ -149,9 +149,13 @@ def scan_prompt(request):
 
 @login_required
 def start_quick_scan_task(request):
-    task = scan_user_library.delay(request.user.id, quick_scan=True)
+    task = scan_user_library.delay(request.user.id, scan_mode='quick')
     return JsonResponse({'task_id': task.id})
 
+@login_required
+def start_cover_scan_task(request):
+    task = scan_user_library.delay(request.user.id, scan_mode='covers_only')
+    return JsonResponse({'task_id': task.id})
 
 @login_required
 def artist_list(request):
@@ -261,7 +265,7 @@ def play_song(request, file_id):
 
 @login_required
 def start_scan_task(request):
-    task = scan_user_library.delay(request.user.id)
+    task = scan_user_library.delay(request.user.id, scan_mode='full') # <-- MODIFICADO
     return JsonResponse({'task_id': task.id})
 
 @login_required

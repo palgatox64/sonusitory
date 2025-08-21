@@ -18,6 +18,7 @@ urlpatterns = [
     path('album/<int:album_id>/cover/', views.album_cover, name='album_cover'),
     path('start-scan/', views.start_scan_task, name='start_scan_task'),
     path('start-quick-scan/', views.start_quick_scan_task, name='start_quick_scan_task'),
+     path('start-cover-scan/', views.start_cover_scan_task, name='start_cover_scan_task'),
     path('task-status/<str:task_id>/', views.task_status, name='task_status'),
     
     path('account/', views.account, name='account'),

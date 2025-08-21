@@ -30,6 +30,15 @@
                 id="quick-scan-button">
                 Búsqueda Rápida de Nuevas Canciones
             </button>
+            
+            <button 
+                hx-post="{% url 'start_cover_scan_task' %}" 
+                hx-swap="none"
+                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                class="btn"
+                id="cover-scan-button">
+                Búsqueda de Portadas
+            </button>
             {% endif %}
         </div>
     </div>
