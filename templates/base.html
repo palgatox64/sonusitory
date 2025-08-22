@@ -339,15 +339,6 @@
         }
     });
 
-    document.body.addEventListener('htmx:afterRequest', function(event) {
-        Swal.close();
-        if ((event.detail.elt.id === 'scan-button' || event.detail.elt.id === 'quick-scan-button' || event.detail.elt.id === 'cover-scan-button') && event.detail.xhr.status === 200) {
-            const response = JSON.parse(event.detail.xhr.responseText);
-            const taskId = response.task_id;
-            if (taskId) pollTaskStatus(taskId);
-        }
-    });
-
     document.body.addEventListener('htmx:afterOnLoad', function() {
         updateUserMenuVisibility();
         initializeAccountButtonListener();
@@ -379,12 +370,21 @@
                         let progressText = 'Preparando...';
 
                         if (data.info && data.info.step) {
-                            if (data.info.step === 'songs') {
+                            if (data.info.step === 'finding_folders') {
+                                title = 'Analizando estructura...';
+                                progressText = 'Buscando todas las carpetas en tu nube. Esto puede tardar...';
+                            } else if (data.info.step === 'folders_found') {
+                                title = 'Análisis de estructura completo';
+                                progressText = `Se encontraron ${data.info.total_folders} carpetas. Iniciando siguiente paso...`;
+                            } else if (data.info.step === 'identifying_album_folders') {
+                                title = 'Identificando Álbumes';
+                                progressText = 'Determinando qué carpetas contienen música.';
+                            } else if (data.info.step === 'songs') {
                                 title = 'Paso 1 de 2: Procesando canciones...';
                                 progressText = `Procesando lote ${data.info.current} de ${data.info.total}`;
                             } else if (data.info.step === 'covers') {
                                 title = 'Paso 2 de 2: Buscando portadas...';
-                                progressText = `Analizando carpeta ${data.info.current} de ${data.info.total}`;
+                                progressText = `Analizando carpeta de álbum ${data.info.current} de ${data.info.total}`;
                             }
                         }
                         Swal.update({ title, text: progressText });

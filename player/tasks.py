@@ -34,6 +34,7 @@ def scan_user_library(self, user_id, scan_mode='full'):
 
     service = build('drive', 'v3', credentials=creds)
 
+    self.update_state(state='PROGRESS', meta={'step': 'finding_folders'})
     all_folder_ids = [root_folder_id]
     def find_folders_recursive(folder_id):
         q = f"mimeType='application/vnd.google-apps.folder' and '{folder_id}' in parents and trashed=false"
@@ -46,31 +47,26 @@ def scan_user_library(self, user_id, scan_mode='full'):
         except Exception as e:
             print(f"Error buscando subcarpetas en {folder_id}: {e}")
 
-    print("Iniciando búsqueda de carpetas...")
     find_folders_recursive(root_folder_id)
-    print(f"Se encontraron {len(all_folder_ids)} carpetas.")
+    total_folders = len(all_folder_ids)
+    self.update_state(state='PROGRESS', meta={'step': 'folders_found', 'total_folders': total_folders})
 
     folder_cache = {}
     songs_created_count = 0
     album_folders_with_songs = set()
     new_album_folder_ids = set()
 
-    # --- LÓGICA DE ESCANEO DE CANCIONES ---
     if scan_mode != 'covers_only':
-        print("Buscando y procesando archivos de audio...")
-        total_folders = len(all_folder_ids)
-        batch_size = 20
-        total_song_batches = (total_folders + batch_size - 1) // batch_size
+        total_song_batches = (total_folders + 19) // 20
         
         if scan_mode == 'quick':
             existing_file_ids = set(Song.objects.filter(user=user).values_list('google_file_id', flat=True))
-            print(f"Búsqueda rápida: Se omitirán {len(existing_file_ids)} canciones existentes.")
 
-        for i in range(0, total_folders, batch_size):
-            current_batch_num = (i // batch_size) + 1
+        for i in range(0, total_folders, 20):
+            current_batch_num = (i // 20) + 1
             self.update_state(state='PROGRESS', meta={'step': 'songs', 'current': current_batch_num, 'total': total_song_batches})
             
-            batch_ids = all_folder_ids[i:i + batch_size]
+            batch_ids = all_folder_ids[i:i + 20]
             parent_queries = ' or '.join([f"'{folder_id}' in parents" for folder_id in batch_ids])
             audio_query = f"({parent_queries}) and (mimeType='audio/mpeg' or mimeType='audio/flac' or mimeType='audio/wav') and trashed=false"
             
@@ -118,7 +114,7 @@ def scan_user_library(self, user_id, scan_mode='full'):
                     break
 
     if scan_mode == 'covers_only':
-        self.update_state(state='PROGRESS', meta={'step': 'finding_folders', 'current': 1, 'total': 1})
+        self.update_state(state='PROGRESS', meta={'step': 'identifying_album_folders'})
         for folder_id in all_folder_ids:
             q = f"'{folder_id}' in parents and (mimeType='audio/mpeg' or mimeType='audio/flac' or mimeType='audio/wav') and trashed=false"
             results = service.files().list(q=q, pageSize=1, fields="files(id)").execute()
@@ -127,11 +123,8 @@ def scan_user_library(self, user_id, scan_mode='full'):
 
     folders_to_scan_for_covers = new_album_folder_ids if scan_mode == 'quick' else album_folders_with_songs
 
-    if not folders_to_scan_for_covers:
-        covers_found_count = 0
-    else:
-        print(f"Buscando portadas en {len(folders_to_scan_for_covers)} carpetas de álbumes...")
-        covers_found_count = 0
+    covers_found_count = 0
+    if folders_to_scan_for_covers:
         total_album_folders = len(folders_to_scan_for_covers)
         
         for index, album_folder_id in enumerate(list(folders_to_scan_for_covers)):
@@ -150,5 +143,10 @@ def scan_user_library(self, user_id, scan_mode='full'):
                     covers_found_count += 1
             except Exception as e:
                 print(f"Error buscando portada en carpeta {album_folder_id}: {e}")
-
-    return f"¡Escaneo completado! Se crearon {songs_created_count} canciones nuevas y se encontraron {covers_found_count} portadas."
+    
+    if scan_mode == 'quick':
+        return f"¡Búsqueda rápida completada! Se añadieron {songs_created_count} canciones nuevas."
+    elif scan_mode == 'covers_only':
+        return f"¡Búsqueda de portadas completada! Se encontraron {covers_found_count} portadas."
+    else:
+        return f"¡Escaneo completo! Se añadieron {songs_created_count} canciones y se encontraron {covers_found_count} portadas."
