@@ -129,13 +129,45 @@ def select_folder(request):
         return redirect('google_login')
         
     service = build('drive', 'v3', credentials=creds)
-    query = "mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false"
-    results = service.files().list(q=query, fields="files(id, name)").execute()
-    folders = results.get('files', [])
+    
+    # Buscar carpetas reales en la raíz
+    folder_query = "mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false"
+    folder_results = service.files().list(q=folder_query, fields="files(id, name)").execute()
+    real_folders = folder_results.get('files', [])
+    
+    # Buscar shortcuts (accesos directos) en la raíz
+    shortcut_query = "mimeType='application/vnd.google-apps.shortcut' and 'root' in parents and trashed=false"
+    shortcut_results = service.files().list(q=shortcut_query, fields="files(id, name, shortcutDetails)").execute()
+    shortcuts = shortcut_results.get('files', [])
+    
+    # Procesar shortcuts para obtener información de las carpetas de destino
+    processed_folders = []
+    for folder in real_folders:
+        processed_folders.append({
+            'id': folder['id'],
+            'name': folder['name'],
+            'type': 'folder'
+        })
+    
+    for shortcut in shortcuts:
+        try:
+            # Obtener información de la carpeta de destino del shortcut
+            target_id = shortcut['shortcutDetails']['targetId']
+            target_info = service.files().get(fileId=target_id, fields="id, name, mimeType").execute()
+            
+            # Solo incluir si el destino es una carpeta
+            if target_info.get('mimeType') == 'application/vnd.google-apps.folder':
+                processed_folders.append({
+                    'id': target_id,  # Usar el ID de la carpeta de destino
+                    'name': shortcut['name'], # Nombre sin emoji
+                    'type': 'shortcut'
+                })
+        except Exception as e:
+            print(f"Error procesando shortcut {shortcut['name']}: {e}")
     
     base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
     
-    context = {'folders': folders, 'base_template': base_template}
+    context = {'folders': processed_folders, 'base_template': base_template}
     return render(request, 'player/select_folder.html', context)
 
 @login_required

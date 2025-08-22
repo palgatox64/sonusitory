@@ -34,7 +34,7 @@ def scan_user_library(self, user_id, scan_mode='full'):
 
     service = build('drive', 'v3', credentials=creds)
 
-    if scan_mode != 'covers_only':
+    if scan_mode == 'full':
         self.update_state(state='PROGRESS', meta={'step': 'finding_folders'})
         all_folder_ids = [root_folder_id]
         def find_folders_recursive(folder_id):
@@ -57,12 +57,9 @@ def scan_user_library(self, user_id, scan_mode='full'):
     album_folders_with_songs = set()
     new_album_folder_ids = set()
 
-    if scan_mode != 'covers_only':
+    if scan_mode == 'full':
         total_song_batches = (total_folders + 19) // 20
         
-        if scan_mode == 'quick':
-            existing_file_ids = set(Song.objects.filter(user=user).values_list('google_file_id', flat=True))
-
         for i in range(0, total_folders, 20):
             current_batch_num = (i // 20) + 1
             self.update_state(state='PROGRESS', meta={'step': 'songs', 'current': current_batch_num, 'total': total_song_batches})
@@ -76,9 +73,6 @@ def scan_user_library(self, user_id, scan_mode='full'):
                 try:
                     results = service.files().list(q=audio_query, pageSize=1000, fields="nextPageToken, files(id, name, mimeType, parents)", pageToken=page_token).execute()
                     for file_data in results.get('files', []):
-                        if scan_mode == 'quick' and file_data.get('id') in existing_file_ids:
-                            continue
-                            
                         try:
                             album_folder_id = file_data['parents'][0]
                             album_folders_with_songs.add(album_folder_id)
@@ -113,7 +107,79 @@ def scan_user_library(self, user_id, scan_mode='full'):
                 except Exception as e:
                     print(f"Error de API en lote de audio {current_batch_num}: {e}")
                     break
-    else:
+                    
+    elif scan_mode == 'quick':
+        self.update_state(state='PROGRESS', meta={'step': 'getting_existing_files'})
+        existing_file_ids = set(Song.objects.filter(user=user).values_list('google_file_id', flat=True))
+        
+        self.update_state(state='PROGRESS', meta={'step': 'searching_new_files'})
+        
+        audio_query = f"(mimeType='audio/mpeg' or mimeType='audio/flac' or mimeType='audio/wav') and trashed=false"
+        
+        page_token = None
+        files_processed = 0
+        
+        while True:
+            try:
+                results = service.files().list(
+                    q=audio_query, 
+                    pageSize=100, 
+                    fields="nextPageToken, files(id, name, mimeType, parents)", 
+                    pageToken=page_token
+                ).execute()
+                
+                for file_data in results.get('files', []):
+                    files_processed += 1
+                    if files_processed % 50 == 0:
+                        self.update_state(state='PROGRESS', meta={'step': 'processing_new_files', 'current': files_processed})
+                    
+
+                    if file_data.get('id') in existing_file_ids:
+                        continue
+                        
+                    try:
+                        album_folder_id = file_data['parents'][0]
+                        
+                        if album_folder_id not in folder_cache:
+                            folder_cache[album_folder_id] = service.files().get(fileId=album_folder_id, fields='id, name, parents').execute()
+                        album_folder_meta = folder_cache[album_folder_id]
+                        
+                        if 'parents' not in album_folder_meta: 
+                            continue
+                            
+                        artist_folder_id = album_folder_meta['parents'][0]
+                        if artist_folder_id not in folder_cache:
+                            folder_cache[artist_folder_id] = service.files().get(fileId=artist_folder_id, fields='id, name').execute()
+                        
+
+                        
+                        album_name = album_folder_meta['name']
+                        artist_name = folder_cache[artist_folder_id]['name']
+
+                        artist_obj, _ = Artist.objects.get_or_create(name=artist_name, user=user)
+                        album_obj, _ = Album.objects.get_or_create(name=album_name, artist=artist_obj, user=user)
+                        track_num, clean_title = clean_and_extract_metadata(file_data.get('name'))
+
+                        _, created = Song.objects.update_or_create(
+                            google_file_id=file_data.get('id'), user=user,
+                            defaults={ 'name': file_data.get('name'), 'title': clean_title, 'track_number': track_num, 'mime_type': file_data.get('mime_type', 'application/octet-stream'), 'artist': artist_obj, 'album': album_obj }
+                        )
+                        if created:
+                            songs_created_count += 1
+                            new_album_folder_ids.add(album_folder_id)
+                            album_folders_with_songs.add(album_folder_id)
+                    except Exception as e:
+                        print(f"Error procesando archivo {file_data.get('name')}: {e}")
+                
+                page_token = results.get('nextPageToken', None)
+                if not page_token: 
+                    break
+            except Exception as e:
+                print(f"Error de API en búsqueda rápida: {e}")
+                break
+                
+    elif scan_mode == 'covers_only':
+
         self.update_state(state='PROGRESS', meta={'step': 'getting_existing_albums'})
         albums_without_covers = Album.objects.filter(user=user, cover_image_id__isnull=True)
         
@@ -126,7 +192,7 @@ def scan_user_library(self, user_id, scan_mode='full'):
         
         for i in range(0, len(album_names), 10):
             batch_names = album_names[i:i + 10]
-            name_queries = ' or '.join([f"name='{name.replace(chr(39), chr(39)+chr(39))}'" for name in batch_names])  # Escapar comillas
+            name_queries = ' or '.join([f"name='{name.replace(chr(39), chr(39)+chr(39))}'" for name in batch_names])
             folder_query = f"mimeType='application/vnd.google-apps.folder' and ({name_queries}) and trashed=false"
             
             try:
@@ -140,7 +206,8 @@ def scan_user_library(self, user_id, scan_mode='full'):
         
         album_folders_with_songs = set(album_folder_ids)
 
-    folders_to_scan_for_covers = new_album_folder_ids if scan_mode == 'quick' else album_folders_with_songs
+
+    folders_to_scan_for_covers = new_album_folder_ids if scan_mode in ['quick', 'full'] else album_folders_with_songs
 
     covers_found_count = 0
     if folders_to_scan_for_covers:
@@ -166,7 +233,9 @@ def scan_user_library(self, user_id, scan_mode='full'):
     if scan_mode == 'quick':
         songs_text = "canción nueva" if songs_created_count == 1 else "canciones nuevas"
         songs_verb = "añadió" if songs_created_count == 1 else "añadieron"
-        return f"¡Búsqueda rápida completada! Se {songs_verb} {songs_created_count} {songs_text}."
+        covers_text = "portada nueva" if covers_found_count == 1 else "portadas nuevas"
+        covers_verb = "encontró" if covers_found_count == 1 else "encontraron"
+        return f"¡Búsqueda rápida completada! Se {songs_verb} {songs_created_count} {songs_text} y se {covers_verb} {covers_found_count} {covers_text}."
     elif scan_mode == 'covers_only':
         covers_text = "portada nueva" if covers_found_count == 1 else "portadas nuevas"
         covers_verb = "encontró" if covers_found_count == 1 else "encontraron"

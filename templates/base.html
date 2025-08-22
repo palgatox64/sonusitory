@@ -394,6 +394,7 @@
                                             if (!likeButton.classList.contains('liked')) {
                                                 songLi.remove();
                                                 
+
                                                 const songList = document.getElementById('song-list');
                                                 if (songList && songList.children.length === 0) {
                                                     songList.style.display = 'none';
@@ -566,6 +567,15 @@
                             } else if (data.info.step === 'getting_existing_albums') {
                                 title = 'Obteniendo álbumes existentes';
                                 progressText = 'Identificando álbumes sin portada desde la base de datos...';
+                            } else if (data.info.step === 'getting_existing_files') {
+                                title = 'Obteniendo archivos existentes';
+                                progressText = 'Consultando archivos ya registrados en la base de datos...';
+                            } else if (data.info.step === 'searching_new_files') {
+                                title = 'Buscando archivos nuevos';
+                                progressText = 'Buscando archivos de audio no registrados...';
+                            } else if (data.info.step === 'processing_new_files') {
+                                title = 'Procesando archivos nuevos';
+                                progressText = `Archivos procesados: ${data.info.current}`;
                             } else if (data.info.step === 'identifying_album_folders') {
                                 title = 'Identificando Álbumes';
                                 progressText = 'Determinando qué carpetas contienen música.';

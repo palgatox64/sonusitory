@@ -1,4 +1,5 @@
 {% extends request.htmx|yesno:"_base_empty.html,base.html" %}
+{% load static %}
 
 {% block content %}
     <h1>Selecciona tu Carpeta de Música</h1>
@@ -12,7 +13,11 @@
         <div class="artist-list">
             {% for folder in folders %}
                 <a href="{% url 'set_folder' folder_id=folder.id %}">
-                    📁 {{ folder.name }}
+                    {% if folder.type == 'shortcut' %}
+                        <img src="{% static 'images/external_link.png' %}" alt="Acceso directo" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 5px;">{{ folder.name }}
+                    {% else %}
+                        📁 {{ folder.name }}
+                    {% endif %}
                 </a>
             {% endfor %}
         </div>
