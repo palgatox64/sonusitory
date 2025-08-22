@@ -14,6 +14,7 @@ import os
 import io
 import json
 import requests
+from django.utils import timezone
 
 
 CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(__file__), '..', 'credentials', 'client_secret.json')
@@ -295,18 +296,39 @@ def toggle_like_song(request, song_id):
     if request.method == 'POST':
         try:
             song = Song.objects.get(google_file_id=song_id, user=request.user)
+            
+            # Verificar si es una acción de "deshacer"
+            is_undo = request.POST.get('undo') == 'true'
+            original_date = request.POST.get('original_date')
+            
             liked_song, created = LikedSong.objects.get_or_create(
                 user=request.user,
                 song=song
             )
             
             if not created:
+                # Si ya existía, guardamos la fecha original antes de eliminarlo
+                original_created_at = liked_song.created_at
                 liked_song.delete()
                 liked = False
-            else:
-                liked = True
                 
-            return JsonResponse({'liked': liked})
+                # Devolver la fecha original para posible "deshacer"
+                return JsonResponse({
+                    'liked': liked,
+                    'original_date': original_created_at.isoformat()
+                })
+            else:
+                # Si se creó nuevo
+                if is_undo and original_date:
+                    # Si es un "deshacer", restaurar la fecha original
+                    from datetime import datetime
+                    liked_song.created_at = datetime.fromisoformat(original_date.replace('Z', '+00:00'))
+                    liked_song.original_created_at = liked_song.created_at
+                    liked_song.save()
+                
+                liked = True
+                return JsonResponse({'liked': liked})
+                
         except Song.DoesNotExist:
             return JsonResponse({'error': 'Canción no encontrada'}, status=404)
     

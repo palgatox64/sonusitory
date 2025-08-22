@@ -276,6 +276,7 @@
                 }
             }
 
+            // Manejar clicks en botones de "Me Gusta"
             const likeButton = event.target.closest('.like-btn');
             if (likeButton) {
                 event.stopPropagation();
@@ -285,30 +286,29 @@
                 const songLi = likeButton.closest('li');
                 const isInLikedSongsPage = window.location.pathname === '/liked/' || window.location.pathname.includes('/liked/');
                 
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', csrfToken);
+                
                 fetch(`/toggle-like/${songId}/`, {
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': csrfToken,
-                        'Content-Type': 'application/json'
-                    }
+                    body: formData
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.liked !== undefined) {
-                        const Toast = Swal.mixin({
-                            toast: true, 
-                            position: 'top-end', 
-                            showConfirmButton: false, 
-                            timer: 3000, 
-                            timerProgressBar: true,
-                            didOpen: (toast) => {
-                                toast.onmouseenter = Swal.stopTimer;
-                                toast.onmouseleave = Swal.resumeTimer;
-                            }
-                        });
-                        
                         if (data.liked) {
                             likeButton.classList.add('liked');
+                            const Toast = Swal.mixin({
+                                toast: true, 
+                                position: 'top-end', 
+                                showConfirmButton: false, 
+                                timer: 3000, 
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                }
+                            });
                             Toast.fire({ 
                                 icon: 'success', 
                                 title: `'${songName}' añadida a tus Me Gusta` 
@@ -334,13 +334,15 @@
                                 title: `'${songName}' eliminada de tus Me Gusta` 
                             }).then((result) => {
                                 if (result.isConfirmed) {
-                                    // Deshacer la acción - volver a dar like
+                                    // Deshacer la acción - volver a dar like con fecha original
+                                    const undoFormData = new FormData();
+                                    undoFormData.append('csrfmiddlewaretoken', csrfToken);
+                                    undoFormData.append('undo', 'true');
+                                    undoFormData.append('original_date', data.original_date);
+                                    
                                     fetch(`/toggle-like/${songId}/`, {
                                         method: 'POST',
-                                        headers: {
-                                            'X-CSRFToken': csrfToken,
-                                            'Content-Type': 'application/json'
-                                        }
+                                        body: undoFormData
                                     })
                                     .then(response => response.json())
                                     .then(undoData => {

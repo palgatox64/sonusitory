@@ -54,6 +54,7 @@ class LikedSong(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     song = models.ForeignKey(Song, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+    original_created_at = models.DateTimeField(null=True, blank=True)  # Para preservar fecha original
 
     class Meta:
         unique_together = ('user', 'song')
