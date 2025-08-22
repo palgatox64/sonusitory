@@ -84,7 +84,6 @@
     let songQueue = [];
     let songMenuListenersInitialized = false;
 
-    // Mover la función playSong fuera del DOMContentLoaded para que sea accesible globalmente
     function playSong(songId, songName) {
         const songUrl = `/play/${songId}/`;
         const nowPlayingElem = document.getElementById('now-playing');
@@ -246,7 +245,7 @@
                 return;
             }
 
-            // Manejar clicks en botones de cola
+
             const queueButton = event.target.closest('.queue-add-btn');
             if (queueButton) {
                 event.stopPropagation();
@@ -257,7 +256,7 @@
                     songQueue.push({ id: songId, name: songName });
 
                     const Toast = Swal.mixin({
-                        toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true,
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 3500, timerProgressBar: true,
                         didOpen: (toast) => {
                             toast.onmouseenter = Swal.stopTimer;
                             toast.onmouseleave = Swal.resumeTimer;
@@ -268,7 +267,6 @@
                 return;
             }
 
-            // Manejar clicks en canciones para reproducir
             const songItem = event.target.closest('li[data-song-id]');
             if (songItem && !event.target.closest('.song-menu-container')) {
                 const songId = songItem.dataset.songId;
@@ -283,7 +281,10 @@
             if (likeButton) {
                 event.stopPropagation();
                 const songId = likeButton.dataset.songId;
+                const songName = likeButton.closest('li').dataset.songName;
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                const songLi = likeButton.closest('li');
+                const isInLikedSongsPage = window.location.pathname === '/liked/' || window.location.pathname.includes('/liked/');
                 
                 fetch(`/toggle-like/${songId}/`, {
                     method: 'POST',
@@ -295,18 +296,69 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.liked !== undefined) {
+                        const Toast = Swal.mixin({
+                            toast: true, 
+                            position: 'top-end', 
+                            showConfirmButton: false, 
+                            timer: 3000, 
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.onmouseenter = Swal.stopTimer;
+                                toast.onmouseleave = Swal.resumeTimer;
+                            }
+                        });
+                        
                         if (data.liked) {
                             likeButton.classList.add('liked');
+                            Toast.fire({ 
+                                icon: 'success', 
+                                title: `'${songName}' añadida a tus Me Gusta` 
+                            });
                         } else {
                             likeButton.classList.remove('liked');
+                            Toast.fire({ 
+                                icon: 'info', 
+                                title: `'${songName}' eliminada de tus Me Gusta` 
+                            });
+                            
+                            if (isInLikedSongsPage && songLi) {
+                                songLi.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                                songLi.style.opacity = '0';
+                                songLi.style.transform = 'translateX(-20px)';
+                                
+                                setTimeout(() => {
+                                    songLi.remove();
+                                    
+                                    const songList = document.getElementById('song-list');
+                                    if (songList && songList.children.length === 0) {
+                                        songList.style.display = 'none';
+                                        
+                                        const emptyMessage = document.createElement('p');
+                                        emptyMessage.textContent = 'No tienes canciones marcadas como "Me gusta" aún.';
+                                        songList.parentNode.insertBefore(emptyMessage, songList.nextSibling);
+                                    }
+                                }, 300);
+                            }
                         }
                     }
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => {
+                    console.error('Error:', error);
+                    const Toast = Swal.mixin({
+                        toast: true, 
+                        position: 'top-end', 
+                        showConfirmButton: false, 
+                        timer: 3000, 
+                        timerProgressBar: true
+                    });
+                    Toast.fire({ 
+                        icon: 'error', 
+                        title: 'Error al procesar Me Gusta' 
+                    });
+                });
                 return;
             }
 
-            // Cerrar menús si se hace click fuera de ellos
             if (!event.target.closest('.song-menu-container')) {
                 document.querySelectorAll('#song-list li.menu-open').forEach(openLi => {
                     openLi.classList.remove('menu-open');
@@ -411,7 +463,6 @@
         updateUserMenuVisibility();
         initializeAccountButtonListener();
         initializeAvatarUpload();
-        // No volver a llamar initializeSongMenuListeners aquí
         
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');
@@ -479,7 +530,6 @@
         }, 3000);
     }
 
-    // Para debug - puedes agregar esto temporalmente en la consola del navegador
     window.showQueue = function() {
         console.log('Cola actual:', songQueue.map(song => song.name));
     };

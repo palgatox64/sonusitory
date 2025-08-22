@@ -171,7 +171,6 @@ def artist_list(request):
         return redirect('select_folder')
     artists = Artist.objects.filter(user=request.user).order_by('name')
     
-    # Lógica para determinar la plantilla base
     base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
 
     context = {'artists': artists, 'base_template': base_template}
@@ -196,7 +195,6 @@ def album_detail(request, album_id):
     album = Album.objects.get(id=album_id, user=request.user)
     songs = Song.objects.filter(album=album, user=request.user).order_by('track_number', 'name')
     
-    # Lógica para determinar la plantilla base
     base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
     
     context = {'album': album, 'songs': songs, 'base_template': base_template}
@@ -303,11 +301,9 @@ def toggle_like_song(request, song_id):
             )
             
             if not created:
-                # Si ya existía, lo eliminamos (unlike)
                 liked_song.delete()
                 liked = False
             else:
-                # Si se creó, significa que ahora le gusta
                 liked = True
                 
             return JsonResponse({'liked': liked})

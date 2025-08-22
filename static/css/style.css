@@ -44,7 +44,7 @@ a:hover {
     background-color: #282828;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
+    transition: background-color 0.2s ease-in-out, opacity 0.3s ease, transform 0.3s ease;
 }
 
 .artist-list a:hover,
@@ -419,7 +419,7 @@ login-providers {
 
 .like-btn {
     display: none;
-    background: none;
+    background: rgba(255, 255, 255, 0.1);
     border: none;
     color: #b3b3b3;
     cursor: pointer;
@@ -428,16 +428,22 @@ login-providers {
     height: 32px;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s ease;
+    transition: all 0.2s ease;
     font-size: 16px;
 }
 
 .like-btn:hover {
+    background-color: rgba(187, 134, 252, 0.2);
     color: #bb86fc;
 }
 
 .like-btn.liked {
     color: #bb86fc;
+    background: rgba(187, 134, 252, 0.1);
+}
+
+.like-btn.liked:hover {
+    background-color: rgba(187, 134, 252, 0.3);
 }
 
 #song-list li:hover .like-btn,
@@ -465,7 +471,7 @@ login-providers {
 }
 
 .song-menu-btn:hover {
-    background-color: #bb86fc;
+    background-color: rgba(187, 134, 252, 0.2);
 }
 
 .song-menu-dropdown {
