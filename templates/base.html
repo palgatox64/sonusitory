@@ -276,7 +276,6 @@
                 }
             }
 
-            // Manejar clicks en botones de "Me Gusta"
             const likeButton = event.target.closest('.like-btn');
             if (likeButton) {
                 event.stopPropagation();
@@ -316,28 +315,97 @@
                             });
                         } else {
                             likeButton.classList.remove('liked');
+                            
+                            const Toast = Swal.mixin({
+                                toast: true, 
+                                position: 'top-end', 
+                                showConfirmButton: true,
+                                confirmButtonText: 'Deshacer',
+                                timer: 5000, 
+                                timerProgressBar: true,
+                                didOpen: (toast) => {
+                                    toast.onmouseenter = Swal.stopTimer;
+                                    toast.onmouseleave = Swal.resumeTimer;
+                                }
+                            });
+                            
                             Toast.fire({ 
                                 icon: 'info', 
                                 title: `'${songName}' eliminada de tus Me Gusta` 
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    // Deshacer la acción - volver a dar like
+                                    fetch(`/toggle-like/${songId}/`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRFToken': csrfToken,
+                                            'Content-Type': 'application/json'
+                                        }
+                                    })
+                                    .then(response => response.json())
+                                    .then(undoData => {
+                                        if (undoData.liked) {
+                                            likeButton.classList.add('liked');
+                                            
+
+                                            if (isInLikedSongsPage && !document.contains(songLi)) {
+                                                window.location.reload();
+                                            }
+                                            
+
+                                            const UndoToast = Swal.mixin({
+                                                toast: true, 
+                                                position: 'top-end', 
+                                                showConfirmButton: false, 
+                                                timer: 2500, 
+                                                timerProgressBar: true
+                                            });
+                                            UndoToast.fire({ 
+                                                icon: 'success', 
+                                                title: `'${songName}' restaurada a tus Me Gusta` 
+                                            });
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error al deshacer:', error);
+                                        const ErrorToast = Swal.mixin({
+                                            toast: true, 
+                                            position: 'top-end', 
+                                            showConfirmButton: false, 
+                                            timer: 3000, 
+                                            timerProgressBar: true
+                                        });
+                                        ErrorToast.fire({ 
+                                            icon: 'error', 
+                                            title: 'Error al deshacer la acción' 
+                                        });
+                                    });
+                                }
                             });
                             
                             if (isInLikedSongsPage && songLi) {
-                                songLi.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
-                                songLi.style.opacity = '0';
-                                songLi.style.transform = 'translateX(-20px)';
-                                
                                 setTimeout(() => {
-                                    songLi.remove();
-                                    
-                                    const songList = document.getElementById('song-list');
-                                    if (songList && songList.children.length === 0) {
-                                        songList.style.display = 'none';
+                                    if (!likeButton.classList.contains('liked')) {
+                                        songLi.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                                        songLi.style.opacity = '0';
+                                        songLi.style.transform = 'translateX(-20px)';
                                         
-                                        const emptyMessage = document.createElement('p');
-                                        emptyMessage.textContent = 'No tienes canciones marcadas como "Me gusta" aún.';
-                                        songList.parentNode.insertBefore(emptyMessage, songList.nextSibling);
+                                        setTimeout(() => {
+                                            if (!likeButton.classList.contains('liked')) {
+                                                songLi.remove();
+                                                
+                                                const songList = document.getElementById('song-list');
+                                                if (songList && songList.children.length === 0) {
+                                                    songList.style.display = 'none';
+                                                    
+                                                    const emptyMessage = document.createElement('p');
+                                                    emptyMessage.textContent = 'No tienes canciones marcadas como "Me gusta" aún.';
+                                                    songList.parentNode.insertBefore(emptyMessage, songList.nextSibling);
+                                                }
+                                            }
+                                        }, 300);
                                     }
-                                }, 300);
+                                }, 100);
                             }
                         }
                     }
