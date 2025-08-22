@@ -278,6 +278,34 @@
                 }
             }
 
+            // Manejar clicks en botones de "Me Gusta"
+            const likeButton = event.target.closest('.like-btn');
+            if (likeButton) {
+                event.stopPropagation();
+                const songId = likeButton.dataset.songId;
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+                
+                fetch(`/toggle-like/${songId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.liked !== undefined) {
+                        if (data.liked) {
+                            likeButton.classList.add('liked');
+                        } else {
+                            likeButton.classList.remove('liked');
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+                return;
+            }
+
             // Cerrar menús si se hace click fuera de ellos
             if (!event.target.closest('.song-menu-container')) {
                 document.querySelectorAll('#song-list li.menu-open').forEach(openLi => {

@@ -412,8 +412,38 @@ login-providers {
     right: 15px;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
+.like-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: #b3b3b3;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+    font-size: 16px;
+}
+
+.like-btn:hover {
+    color: #bb86fc;
+}
+
+.like-btn.liked {
+    color: #bb86fc;
+}
+
+#song-list li:hover .like-btn,
+.like-btn.liked {
+    display: flex;
+}
 
 .song-menu-btn {
     display: none;

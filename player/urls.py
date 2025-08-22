@@ -16,6 +16,7 @@ urlpatterns = [
     path('artist/<int:artist_id>/', views.artist_detail, name='artist_detail'),
     path('album/<int:album_id>/', views.album_detail, name='album_detail'),
     path('album/<int:album_id>/cover/', views.album_cover, name='album_cover'),
+    path('liked/', views.liked_songs, name='liked_songs'),
     path('start-scan/', views.start_scan_task, name='start_scan_task'),
     path('start-quick-scan/', views.start_quick_scan_task, name='start_quick_scan_task'),
      path('start-cover-scan/', views.start_cover_scan_task, name='start_cover_scan_task'),
@@ -24,5 +25,6 @@ urlpatterns = [
     path('account/', views.account, name='account'),
     path('upload-avatar/', views.upload_avatar, name='upload_avatar'),
     path('unlink-service/', views.unlink_service, name='unlink_service'),
-    
+    path('toggle-like/<str:song_id>/', views.toggle_like_song, name='toggle_like_song'),
+
 ]

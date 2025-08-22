@@ -1,0 +1,49 @@
+{% extends request.htmx|yesno:"_base_empty.html,base.html" %}
+{% load static %}
+
+{% block content %}
+    <h1>Tus me gusta</h1>
+    <div class="action-bar">
+        <p>
+            <a href="{% url 'artist_list' %}" hx-get="{% url 'artist_list' %}" hx-target=".main-content" hx-push-url="true" class="btn">Volver a la Biblioteca</a>
+        </p>
+    </div>
+
+    {% if songs %}
+        <ul id="song-list">
+            {% for song in songs %}
+                <li
+                    data-song-id="{{ song.google_file_id }}"
+                    data-song-name="{{ song.title }}">
+
+                    {{ song.title }}
+                    {% if song.artist %}
+                        <span style="color: #b3b3b3; margin-left: 10px;">por {{ song.artist.name }}</span>
+                    {% endif %}
+                
+                    <div class="song-menu-container">
+                        <button class="like-btn liked" 
+                                data-song-id="{{ song.google_file_id }}"
+                                title="Me gusta">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                        <button class="song-menu-btn" title="Más opciones">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="song-menu-dropdown">
+                            <button class="queue-add-btn" 
+                                    title="Añadir a la cola"
+                                    data-song-id="{{ song.google_file_id }}"
+                                    data-song-name="{{ song.title }}">
+                                <img src="{% static 'images/queue_icon.png' %}" alt="Añadir a la cola" style="width: 16px; height: 16px;">
+                                <span>Añadir a la cola</span>
+                            </button>
+                        </div>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No tienes canciones marcadas como "Me gusta" aún.</p>
+    {% endif %}
+{% endblock %}

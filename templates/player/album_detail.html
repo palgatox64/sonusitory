@@ -36,18 +36,24 @@
                     {{ song.title }}
                 
                     <div class="song-menu-container">
-                        <button class="song-menu-btn" title="Más opciones">
-                            <i class="fas fa-ellipsis-v"></i> </button>
-                        <div class="song-menu-dropdown">
-                            <button class="queue-add-btn" 
-                                    title="Añadir a la cola"
-                                    data-song-id="{{ song.google_file_id }}"
-                                    data-song-name="{{ song.title }}">
-                                <img src="{% static 'images/queue_icon.png' %}" alt="Añadir a la cola" style="width: 16px; height: 16px;">
-                                <span>Añadir a la cola</span>
-                            </button>
-                            </div>
+                    <button class="like-btn {% if song in user.liked_songs.all %}liked{% endif %}" 
+                            data-song-id="{{ song.google_file_id }}"
+                            title="Me gusta">
+                        <i class="fas fa-heart"></i>
+                    </button>
+                    <button class="song-menu-btn" title="Más opciones">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="song-menu-dropdown">
+                        <button class="queue-add-btn" 
+                                title="Añadir a la cola"
+                                data-song-id="{{ song.google_file_id }}"
+                                data-song-name="{{ song.title }}">
+                            <img src="{% static 'images/queue_icon.png' %}" alt="Añadir a la cola" style="width: 16px; height: 16px;">
+                            <span>Añadir a la cola</span>
+                        </button>
                     </div>
+                </div>
                     </li>
             {% endfor %}
         </ul>

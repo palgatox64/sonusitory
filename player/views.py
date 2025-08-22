@@ -5,7 +5,7 @@ from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from .models import UserProfile, GoogleCredential, Artist, Album, Song
+from .models import UserProfile, GoogleCredential, Artist, Album, Song, LikedSong
 from django.http import JsonResponse
 from .tasks import scan_user_library
 from celery.result import AsyncResult
@@ -268,6 +268,16 @@ def play_song(request, file_id):
     return response
 
 @login_required
+def liked_songs(request):
+    liked_songs_through = LikedSong.objects.filter(user=request.user).order_by('-created_at')
+    songs = [liked.song for liked in liked_songs_through]
+    
+    base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
+    
+    context = {'songs': songs, 'base_template': base_template}
+    return render(request, 'player/liked_songs.html', context)
+
+@login_required
 def start_scan_task(request):
     task = scan_user_library.delay(request.user.id, scan_mode='full') # <-- MODIFICADO
     return JsonResponse({'task_id': task.id})
@@ -281,3 +291,27 @@ def task_status(request, task_id):
         'info': task_result.info,
     }
     return JsonResponse(result)
+
+@login_required
+def toggle_like_song(request, song_id):
+    if request.method == 'POST':
+        try:
+            song = Song.objects.get(google_file_id=song_id, user=request.user)
+            liked_song, created = LikedSong.objects.get_or_create(
+                user=request.user,
+                song=song
+            )
+            
+            if not created:
+                # Si ya existía, lo eliminamos (unlike)
+                liked_song.delete()
+                liked = False
+            else:
+                # Si se creó, significa que ahora le gusta
+                liked = True
+                
+            return JsonResponse({'liked': liked})
+        except Song.DoesNotExist:
+            return JsonResponse({'error': 'Canción no encontrada'}, status=404)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)

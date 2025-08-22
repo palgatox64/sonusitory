@@ -1,4 +1,3 @@
-
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -49,9 +48,15 @@ class Song(models.Model):
     album = models.ForeignKey(Album, on_delete=models.CASCADE, related_name='songs', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    liked_by = models.ManyToManyField(User, related_name='liked_songs', through='LikedSong')
     
+class LikedSong(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    song = models.ForeignKey(Song, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
     class Meta:
-        unique_together = ('user', 'google_file_id')
+        unique_together = ('user', 'song')
 
     def __str__(self):
-        return self.name
+        return f"{self.user.username} likes {self.song.title or self.song.name}"
