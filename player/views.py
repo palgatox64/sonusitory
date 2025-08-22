@@ -91,10 +91,14 @@ def unlink_service(request):
     Album.objects.filter(user=user).delete()
     Artist.objects.filter(user=user).delete()
     
-    # Borrar credenciales y perfil
     GoogleCredential.objects.filter(user=user).delete()
-    UserProfile.objects.filter(user=user).delete()
     
+    try:
+        profile = UserProfile.objects.get(user=user)
+        profile.google_drive_root_id = None
+        profile.save()
+    except UserProfile.DoesNotExist:
+        pass
 
     return redirect('google_login')
 
