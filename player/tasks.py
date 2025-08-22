@@ -34,22 +34,23 @@ def scan_user_library(self, user_id, scan_mode='full'):
 
     service = build('drive', 'v3', credentials=creds)
 
-    self.update_state(state='PROGRESS', meta={'step': 'finding_folders'})
-    all_folder_ids = [root_folder_id]
-    def find_folders_recursive(folder_id):
-        q = f"mimeType='application/vnd.google-apps.folder' and '{folder_id}' in parents and trashed=false"
-        try:
-            results = service.files().list(q=q, fields="files(id)").execute()
-            folders = results.get('files', [])
-            for folder in folders:
-                all_folder_ids.append(folder.get('id'))
-                find_folders_recursive(folder.get('id'))
-        except Exception as e:
-            print(f"Error buscando subcarpetas en {folder_id}: {e}")
+    if scan_mode != 'covers_only':
+        self.update_state(state='PROGRESS', meta={'step': 'finding_folders'})
+        all_folder_ids = [root_folder_id]
+        def find_folders_recursive(folder_id):
+            q = f"mimeType='application/vnd.google-apps.folder' and '{folder_id}' in parents and trashed=false"
+            try:
+                results = service.files().list(q=q, fields="files(id)").execute()
+                folders = results.get('files', [])
+                for folder in folders:
+                    all_folder_ids.append(folder.get('id'))
+                    find_folders_recursive(folder.get('id'))
+            except Exception as e:
+                print(f"Error buscando subcarpetas en {folder_id}: {e}")
 
-    find_folders_recursive(root_folder_id)
-    total_folders = len(all_folder_ids)
-    self.update_state(state='PROGRESS', meta={'step': 'folders_found', 'total_folders': total_folders})
+        find_folders_recursive(root_folder_id)
+        total_folders = len(all_folder_ids)
+        self.update_state(state='PROGRESS', meta={'step': 'folders_found', 'total_folders': total_folders})
 
     folder_cache = {}
     songs_created_count = 0
@@ -112,14 +113,32 @@ def scan_user_library(self, user_id, scan_mode='full'):
                 except Exception as e:
                     print(f"Error de API en lote de audio {current_batch_num}: {e}")
                     break
-
-    if scan_mode == 'covers_only':
-        self.update_state(state='PROGRESS', meta={'step': 'identifying_album_folders'})
-        for folder_id in all_folder_ids:
-            q = f"'{folder_id}' in parents and (mimeType='audio/mpeg' or mimeType='audio/flac' or mimeType='audio/wav') and trashed=false"
-            results = service.files().list(q=q, pageSize=1, fields="files(id)").execute()
-            if results.get('files'):
-                album_folders_with_songs.add(folder_id)
+    else:
+        self.update_state(state='PROGRESS', meta={'step': 'getting_existing_albums'})
+        albums_without_covers = Album.objects.filter(user=user, cover_image_id__isnull=True)
+        
+        album_name_mapping = {}
+        for album in albums_without_covers:
+            album_name_mapping[album.name] = album
+        
+        album_folder_ids = []
+        album_names = list(album_name_mapping.keys())
+        
+        for i in range(0, len(album_names), 10):
+            batch_names = album_names[i:i + 10]
+            name_queries = ' or '.join([f"name='{name.replace(chr(39), chr(39)+chr(39))}'" for name in batch_names])  # Escapar comillas
+            folder_query = f"mimeType='application/vnd.google-apps.folder' and ({name_queries}) and trashed=false"
+            
+            try:
+                results = service.files().list(q=folder_query, pageSize=100, fields="files(id, name)").execute()
+                for folder in results.get('files', []):
+                    if folder['name'] in album_name_mapping:
+                        album_folder_ids.append(folder['id'])
+                        folder_cache[folder['id']] = folder
+            except Exception as e:
+                print(f"Error buscando carpetas de álbumes: {e}")
+        
+        album_folders_with_songs = set(album_folder_ids)
 
     folders_to_scan_for_covers = new_album_folder_ids if scan_mode == 'quick' else album_folders_with_songs
 
@@ -145,8 +164,16 @@ def scan_user_library(self, user_id, scan_mode='full'):
                 print(f"Error buscando portada en carpeta {album_folder_id}: {e}")
     
     if scan_mode == 'quick':
-        return f"¡Búsqueda rápida completada! Se añadieron {songs_created_count} canciones nuevas."
+        songs_text = "canción nueva" if songs_created_count == 1 else "canciones nuevas"
+        songs_verb = "añadió" if songs_created_count == 1 else "añadieron"
+        return f"¡Búsqueda rápida completada! Se {songs_verb} {songs_created_count} {songs_text}."
     elif scan_mode == 'covers_only':
-        return f"¡Búsqueda de portadas completada! Se encontraron {covers_found_count} portadas."
+        covers_text = "portada nueva" if covers_found_count == 1 else "portadas nuevas"
+        covers_verb = "encontró" if covers_found_count == 1 else "encontraron"
+        return f"¡Búsqueda de portadas completada! Se {covers_verb} {covers_found_count} {covers_text}."
     else:
-        return f"¡Escaneo completo! Se añadieron {songs_created_count} canciones y se encontraron {covers_found_count} portadas."
+        songs_text = "canción nueva" if songs_created_count == 1 else "canciones nuevas"
+        songs_verb = "añadió" if songs_created_count == 1 else "añadieron"
+        covers_text = "portada nueva" if covers_found_count == 1 else "portadas nuevas"
+        covers_verb = "encontró" if covers_found_count == 1 else "encontraron"
+        return f"¡Escaneo completo! Se {songs_verb} {songs_created_count} {songs_text} y se {covers_verb} {covers_found_count} {covers_text}."

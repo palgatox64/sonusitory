@@ -228,7 +228,6 @@
                 const dropdown = menuButton.nextElementSibling;
                 const isAlreadyOpen = parentLi.classList.contains('menu-open');
 
-                // Cerrar todos los menús abiertos
                 document.querySelectorAll('#song-list li.menu-open').forEach(openLi => {
                     openLi.classList.remove('menu-open');
                     const menuDropdown = openLi.querySelector('.song-menu-dropdown');
@@ -276,7 +275,6 @@
                 }
             }
 
-            // Manejar clicks en botones de "Me Gusta"
             const likeButton = event.target.closest('.like-btn');
             if (likeButton) {
                 event.stopPropagation();
@@ -565,6 +563,9 @@
                             } else if (data.info.step === 'folders_found') {
                                 title = 'Análisis de estructura completo';
                                 progressText = `Se encontraron ${data.info.total_folders} carpetas. Iniciando siguiente paso...`;
+                            } else if (data.info.step === 'getting_existing_albums') {
+                                title = 'Obteniendo álbumes existentes';
+                                progressText = 'Identificando álbumes sin portada desde la base de datos...';
                             } else if (data.info.step === 'identifying_album_folders') {
                                 title = 'Identificando Álbumes';
                                 progressText = 'Determinando qué carpetas contienen música.';
@@ -572,7 +573,7 @@
                                 title = 'Paso 1 de 2: Procesando canciones...';
                                 progressText = `Procesando lote ${data.info.current} de ${data.info.total}`;
                             } else if (data.info.step === 'covers') {
-                                title = 'Paso 2 de 2: Buscando portadas...';
+                                title = 'Buscando portadas...';
                                 progressText = `Analizando carpeta de álbum ${data.info.current} de ${data.info.total}`;
                             }
                         }
