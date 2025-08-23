@@ -233,16 +233,29 @@
     }
 
     function openPlaylistModal(songId, songName) {
+        console.log('Abriendo modal para canción:', songId, songName);
+        
         // Obtener las playlists del usuario
         fetch('/get-user-playlists/')
-            .then(response => response.json())
-            .then(playlists => {
+            .then(response => {
+                console.log('Respuesta del servidor:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Datos recibidos:', data);
+                
                 let playlistOptions = '';
                 
-                if (playlists.length === 0) {
+                if (data.error) {
+                    console.error('Error del servidor:', data.error);
+                    playlistOptions = '<p style="text-align: center; color: #ff6b6b; margin: 20px 0;">Error al cargar playlists</p>';
+                } else if (data.playlists && data.playlists.length === 0) {
                     playlistOptions = '<p style="text-align: center; color: #b3b3b3; margin: 20px 0;">No tienes playlists creadas. <br><a href="/playlists/" style="color: #bb86fc;">Crear una nueva playlist</a></p>';
-                } else {
-                    playlistOptions = playlists.map(playlist => 
+                } else if (data.playlists) {
+                    playlistOptions = data.playlists.map(playlist => 
                         `<div class="playlist-option" 
                               style="display: flex; align-items: center; gap: 15px; padding: 15px; background-color: #383838; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease;"
                               data-playlist-id="${playlist.id}"
@@ -253,10 +266,12 @@
                                  style="width: 50px; height: 50px; border-radius: 5px; object-fit: cover;">
                             <div>
                                 <div style="color: #ffffff; font-weight: 600;">${playlist.name}</div>
-                                <div style="color: #b3b3b3; font-size: 0.9rem;">${playlist.song_count} canción${playlist.song_count !== 1 ? 'es' : ''}</div>
+                                <div style="color: #b3b3b3; font-size: 0.9rem;">${playlist.song_count || 0} canción${(playlist.song_count || 0) !== 1 ? 'es' : ''}</div>
                             </div>
                         </div>`
                     ).join('');
+                } else {
+                    playlistOptions = '<p style="text-align: center; color: #ff6b6b; margin: 20px 0;">Error inesperado al cargar playlists</p>';
                 }
 
                 Swal.fire({
@@ -292,7 +307,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'No se pudieron cargar las playlists'
+                    text: 'No se pudieron cargar las playlists. Revisa la consola para más detalles.'
                 });
             });
     }

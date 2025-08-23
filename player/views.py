@@ -5,7 +5,7 @@ from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from .models import UserProfile, GoogleCredential, Artist, Album, Song, LikedSong, Playlist
+from .models import UserProfile, GoogleCredential, Artist, Album, Song, LikedSong, Playlist, PlaylistSong
 from django.http import JsonResponse
 from .tasks import scan_user_library
 from celery.result import AsyncResult
@@ -443,7 +443,20 @@ def playlist_list(request):
 @login_required
 def playlist_detail(request, playlist_id):
     playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
-    return render(request, 'player/playlist_detail.html', {'playlist': playlist})
+    # Ordenar canciones por orden y fecha de agregado
+    playlist_songs = PlaylistSong.objects.filter(playlist=playlist).order_by('order', 'date_added')
+    
+    # Obtener IDs de canciones que le gustan al usuario
+    liked_songs_ids = set(LikedSong.objects.filter(
+        user=request.user, 
+        song__in=[ps.song for ps in playlist_songs]
+    ).values_list('song_id', flat=True))
+    
+    return render(request, 'player/playlist_detail.html', {
+        'playlist': playlist,
+        'playlist_songs': playlist_songs,
+        'liked_songs_ids': liked_songs_ids
+    })
 
 @login_required
 def create_playlist(request):
@@ -522,10 +535,19 @@ def add_to_playlist(request, song_id, playlist_id):
             song = Song.objects.get(google_file_id=song_id)
             
             # Verificar si la canción ya está en la playlist
-            if playlist.songs.filter(id=song.id).exists():
+            if PlaylistSong.objects.filter(playlist=playlist, song=song).exists():
                 return JsonResponse({'error': 'La canción ya está en esta playlist'}, status=400)
             
-            playlist.songs.add(song)
+            # Obtener el siguiente número de orden
+            last_order = PlaylistSong.objects.filter(playlist=playlist).aggregate(
+                max_order=models.Max('order')
+            )['max_order'] or 0
+            
+            PlaylistSong.objects.create(
+                playlist=playlist, 
+                song=song, 
+                order=last_order + 1
+            )
             return JsonResponse({'success': True})
         except Playlist.DoesNotExist:
             return JsonResponse({'error': 'Playlist no encontrada'}, status=404)
@@ -534,28 +556,75 @@ def add_to_playlist(request, song_id, playlist_id):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 @login_required
-def get_user_playlists(request):
-    playlists = Playlist.objects.filter(user=request.user).annotate(
-        song_count=models.Count('songs')
-    )
-    playlists_data = [
-        {
-            'id': playlist.id,
-            'name': playlist.name,
-            'cover_image_url': playlist.cover_image_url,
-            'song_count': playlist.song_count
-        }
-        for playlist in playlists
-    ]
-    return JsonResponse(playlists_data, safe=False)
-
-@login_required
-def delete_playlist(request, playlist_id):
+def reorder_playlist(request, playlist_id):
     if request.method == 'POST':
         try:
             playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
-            playlist.delete()
+            song_orders = request.POST.getlist('song_orders[]')
+            
+            # Actualizar el orden de las canciones
+            for index, song_id in enumerate(song_orders):
+                PlaylistSong.objects.filter(
+                    playlist=playlist, 
+                    song__google_file_id=song_id
+                ).update(order=index + 1)
+            
             return JsonResponse({'success': True})
-        except Playlist.DoesNotExist:
-            return JsonResponse({'error': 'Playlist no encontrada'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def remove_from_playlist(request, playlist_id, song_id):
+    if request.method == 'POST':
+        try:
+            playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
+            song = get_object_or_404(Song, google_file_id=song_id)
+            
+            PlaylistSong.objects.filter(playlist=playlist, song=song).delete()
+            
+            # Reordenar las canciones restantes
+            remaining_songs = PlaylistSong.objects.filter(playlist=playlist).order_by('order')
+            for index, playlist_song in enumerate(remaining_songs):
+                playlist_song.order = index + 1
+                playlist_song.save()
+            
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def get_user_playlists(request):
+    """Obtener las playlists del usuario para el modal de añadir a playlist"""
+    try:
+        playlists = Playlist.objects.filter(user=request.user).annotate(
+            song_count=models.Count('songs')
+        ).values('id', 'name', 'cover_image_url', 'song_count')
+        
+        playlists_list = []
+        for playlist in playlists:
+            playlists_list.append({
+                'id': playlist['id'],
+                'name': playlist['name'],
+                'cover_image_url': playlist['cover_image_url'] or '',
+                'song_count': playlist['song_count']
+            })
+        
+        return JsonResponse({'playlists': playlists_list})
+    except Exception as e:
+        print(f"Error en get_user_playlists: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def delete_playlist(request, playlist_id):
+    """Eliminar una playlist"""
+    if request.method == 'POST':
+        try:
+            playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
+            playlist_name = playlist.name
+            playlist.delete()
+            return JsonResponse({'success': True, 'message': f'Playlist "{playlist_name}" eliminada correctamente'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)

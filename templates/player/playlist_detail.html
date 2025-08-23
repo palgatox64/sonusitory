@@ -11,7 +11,7 @@
         </div>
         <div>
             <h1>{{ playlist.name }}</h1>
-            <h2>{{ playlist.songs.count }} canciones</h2>
+            <h2>{{ playlist_songs|length }} canciones</h2>
         </div>
     </div>
     
@@ -42,15 +42,264 @@
         </p>
     </div>
     
-    {% if playlist.songs.all %}
-        <ul id="song-list">
-            {% for song in playlist.songs.all %}
-                <li data-song-id="{{ song.google_file_id }}" data-song-name="{{ song.title }}">
-                    {{ song.title }}
+    {% if playlist_songs %}
+        <ul id="sortable-song-list" class="song-list-sortable" data-playlist-id="{{ playlist.id }}">
+            {% for playlist_song in playlist_songs %}
+                <li class="sortable-song-item" 
+                    data-song-id="{{ playlist_song.song.google_file_id }}" 
+                    data-song-name="{{ playlist_song.song.title }}">
+                    <div class="song-drag-handle">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                    <div class="song-content">
+                        <span class="song-title">{{ playlist_song.song.title }}</span>
+                        {% if playlist_song.song.artist %}
+                            <span class="song-artist">por {{ playlist_song.song.artist.name }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="song-actions">
+                        <button class="like-btn {% if playlist_song.song.id in liked_songs_ids %}liked{% endif %}"
+                                data-song-id="{{ playlist_song.song.google_file_id }}"
+                                title="Me gusta">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                        <button class="remove-from-playlist-btn"
+                                data-song-id="{{ playlist_song.song.google_file_id }}"
+                                data-playlist-id="{{ playlist.id }}"
+                                title="Quitar de playlist">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </li>
             {% endfor %}
         </ul>
     {% else %}
         <p>Esta playlist está vacía. ¡Añade algunas canciones!</p>
     {% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando funciones de playlist...');
+    initializePlaylistSorting();
+    initializeRemoveFromPlaylist();
+    initializeLikeButtons();
+});
+
+document.body.addEventListener('htmx:afterSwap', function() {
+    console.log('Reinicializando después de HTMX swap...');
+    initializePlaylistSorting();
+    initializeRemoveFromPlaylist();
+    initializeLikeButtons();
+});
+
+function initializePlaylistSorting() {
+    const sortableList = document.getElementById('sortable-song-list');
+    if (!sortableList) {
+        console.log('No se encontró lista sortable');
+        return;
+    }
+
+    console.log('Inicializando Sortable en:', sortableList);
+
+    new Sortable(sortableList, {
+        handle: '.song-drag-handle',
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        onStart: function(evt) {
+            console.log('Inicio de arrastre');
+        },
+        onEnd: function(evt) {
+            console.log('Fin de arrastre');
+            const playlistId = sortableList.dataset.playlistId;
+            const songOrders = Array.from(sortableList.children).map(li => 
+                li.dataset.songId
+            );
+            
+            console.log('Nuevo orden:', songOrders);
+            
+            // Mostrar indicador de guardado
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true
+            });
+            
+            Toast.fire({
+                icon: 'info',
+                title: 'Guardando nuevo orden...'
+            });
+            
+            // Enviar nuevo orden al servidor
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', document.querySelector('meta[name="csrf-token"]').content);
+            songOrders.forEach(songId => {
+                formData.append('song_orders[]', songId);
+            });
+            
+            fetch(`/reorder-playlist/${playlistId}/`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Orden actualizado'
+                    });
+                } else {
+                    throw new Error('Error al actualizar orden');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Toast.fire({
+                    icon: 'error',
+                    title: 'Error al guardar el orden'
+                });
+                // Recargar la página para restaurar el orden original
+                location.reload();
+            });
+        }
+    });
+}
+
+function initializeRemoveFromPlaylist() {
+    const removeButtons = document.querySelectorAll('.remove-from-playlist-btn');
+    console.log('Botones de eliminar encontrados:', removeButtons.length);
+    
+    removeButtons.forEach(button => {
+        // Limpiar event listeners anteriores
+        button.replaceWith(button.cloneNode(true));
+    });
+    
+    // Volver a obtener los botones después del reemplazo
+    document.querySelectorAll('.remove-from-playlist-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log('Click en botón eliminar');
+            
+            const songId = this.dataset.songId;
+            const playlistId = this.dataset.playlistId;
+            const songItem = this.closest('li');
+            const songTitle = songItem.querySelector('.song-title').textContent;
+            
+            console.log('Eliminando canción:', songId, 'de playlist:', playlistId);
+            
+            Swal.fire({
+                title: '¿Quitar canción?',
+                text: `¿Estás seguro de que quieres quitar "${songTitle}" de esta playlist?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, quitar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#dc3545'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('csrfmiddlewaretoken', document.querySelector('meta[name="csrf-token"]').content);
+                    
+                    fetch(`/remove-from-playlist/${playlistId}/${songId}/`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Animar la eliminación
+                            songItem.style.transition = 'all 0.3s ease';
+                            songItem.style.opacity = '0';
+                            songItem.style.transform = 'translateX(-20px)';
+                            
+                            setTimeout(() => {
+                                songItem.remove();
+                                // Actualizar contador
+                                const countElement = document.querySelector('h2');
+                                if (countElement) {
+                                    const currentCount = document.querySelectorAll('.sortable-song-item').length;
+                                    countElement.textContent = `${currentCount} canciones`;
+                                    
+                                    if (currentCount === 0) {
+                                        const songList = document.getElementById('sortable-song-list');
+                                        songList.style.display = 'none';
+                                        const emptyMessage = document.createElement('p');
+                                        emptyMessage.textContent = 'Esta playlist está vacía. ¡Añade algunas canciones!';
+                                        songList.parentNode.insertBefore(emptyMessage, songList.nextSibling);
+                                    }
+                                }
+                            }, 300);
+                            
+                            const Toast = Swal.mixin({
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000,
+                                timerProgressBar: true
+                            });
+                            Toast.fire({
+                                icon: 'success',
+                                title: `"${songTitle}" eliminada de la playlist`
+                            });
+                        } else {
+                            throw new Error('Error al eliminar canción');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se pudo eliminar la canción de la playlist'
+                        });
+                    });
+                }
+            });
+        });
+    });
+}
+
+function initializeLikeButtons() {
+    document.querySelectorAll('.like-btn').forEach(button => {
+        // Limpiar event listeners anteriores
+        button.replaceWith(button.cloneNode(true));
+    });
+    
+    // Reinicializar event listeners
+    document.querySelectorAll('.like-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const songId = this.dataset.songId;
+            
+            // Usar la función global de like si existe
+            if (typeof window.handleLikeClick === 'function') {
+                window.handleLikeClick(songId, this);
+            } else {
+                console.log('Función de like no disponible');
+            }
+        });
+    });
+}
+
+// Reproducir canción al hacer clic (excluyendo drag handle y botones)
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.song-drag-handle') || e.target.closest('.song-actions')) {
+        return;
+    }
+    
+    const songItem = e.target.closest('.sortable-song-item');
+    if (songItem) {
+        const songId = songItem.dataset.songId;
+        const songName = songItem.dataset.songName;
+        if (songId && songName && typeof playSong === 'function') {
+            playSong(songId, songName);
+        }
+    }
+});
+</script>
 {% endblock %}

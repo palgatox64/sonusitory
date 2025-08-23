@@ -658,7 +658,32 @@ login-providers {
     border-radius: 5px;
     object-fit: cover;
     display: none;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.cover-placeholder {
+    width: 150px;
+    height: 150px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #404040 25%, #505050 50%, #404040 75%);
+    background-size: 200% 100%;
+    animation: loading-shimmer 1.5s infinite;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+}
+
+@keyframes loading-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 }
 
 .album-info h1 {
@@ -877,4 +902,323 @@ login-providers {
     100% {
         background-color: #dc3545;
     }
+}
+
+/* Estilos para playlist sortable */
+.song-list-sortable {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sortable-song-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #282828;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: 12px;
+    position: relative; /* Importante para z-index */
+}
+
+.sortable-song-item:hover {
+    background-color: #404040;
+}
+
+.song-drag-handle {
+    color: #666;
+    cursor: grab;
+    padding: 8px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    z-index: 10;
+}
+
+.song-drag-handle:hover {
+    color: #bb86fc;
+    background: rgba(187, 134, 252, 0.1);
+}
+
+.song-drag-handle:active {
+    cursor: grabbing;
+}
+
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 20; /* Mayor z-index para asegurar que esté encima */
+}
+
+.remove-from-playlist-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    z-index: 10;
+}
+
+.remove-from-playlist-btn:hover {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.2);
+    transform: scale(1.1);
+}
+
+/* Estilos para sortable.js */
+.sortable-ghost {
+    opacity: 0.5;
+    background-color: #404040 !important;
+}
+
+.sortable-chosen {
+    cursor: grabbing !important;
+}
+
+.sortable-drag {
+    opacity: 0.8;
+    transform: rotate(5deg);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .sortable-song-item {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    
+    .song-title {
+        font-size: 0.9rem;
+    }
+    
+    .song-artist {
+        font-size: 0.8rem;
+    }
+    
+    .song-drag-handle {
+        padding: 2px;
+    }
+    
+    .remove-from-playlist-btn {
+        width: 28px;
+        height: 28px;
+        padding: 6px;
+    }
+}
+
+/* Estilos para playlist sortable */
+.song-list-sortable {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sortable-song-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    background-color: #282828;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: 12px;
+}
+
+.sortable-song-item:hover {
+    background-color: #404040;
+}
+
+.song-drag-handle {
+    color: #666;
+    cursor: grab;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+}
+
+.song-drag-handle:hover {
+    color: #bb86fc;
+}
+
+.song-drag-handle:active {
+    cursor: grabbing;
+}
+
+.song-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.song-title {
+    color: #ffffff;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.song-artist {
+    color: #b3b3b3;
+    font-size: 0.9rem;
+}
+
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.remove-from-playlist-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.remove-from-playlist-btn:hover {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Estilos para sortable.js */
+.sortable-ghost {
+    opacity: 0.5;
+    background-color: #404040 !important;
+}
+
+.sortable-chosen {
+    cursor: grabbing !important;
+}
+
+.sortable-drag {
+    opacity: 0.8;
+    transform: rotate(5deg);
+}
+
+/* Responsive para drag & drop */
+@media (max-width: 768px) {
+    .sortable-song-item {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+    
+    .song-title {
+        font-size: 0.9rem;
+    }
+    
+    .song-artist {
+        font-size: 0.8rem;
+    }
+    
+    .song-drag-handle {
+        padding: 2px;
+    }
+    
+    .remove-from-playlist-btn {
+        width: 28px;
+        height: 28px;
+        padding: 6px;
+    }
+}
+
+/* Asegurar que los botones sean visibles y clickeables */
+.like-btn {
+    display: flex !important; /* Forzar visibilidad */
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #b3b3b3;
+    cursor: pointer;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    z-index: 10;
+}
+
+.like-btn.liked {
+    color: #bb86fc;
+    background: rgba(187, 134, 252, 0.2);
+}
+
+.like-btn:hover {
+    color: #bb86fc;
+    background: rgba(187, 134, 252, 0.3);
+    transform: scale(1.1);
+}
+
+.remove-from-playlist-btn {
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    z-index: 10;
+}
+
+.remove-from-playlist-btn:hover {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.2);
+    transform: scale(1.1);
+}
+
+.song-drag-handle {
+    color: #666;
+    cursor: grab;
+    padding: 8px;
+    border-radius: 4px;
+    transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    z-index: 10;
+}
+
+.song-drag-handle:hover {
+    color: #bb86fc;
+    background: rgba(187, 134, 252, 0.1);
+}
+
+.song-drag-handle:active {
+    cursor: grabbing;
+}
+
+.song-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 20; /* Mayor z-index para asegurar que esté encima */
 }
