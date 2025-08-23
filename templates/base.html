@@ -252,15 +252,15 @@
                 } else if (data.playlists) {
                     playlistOptions = data.playlists.map(playlist => 
                         `<div class="playlist-option" 
-                              style="display: flex; align-items: center; gap: 15px; padding: 15px; background-color: #383838; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease;"
-                              data-playlist-id="${playlist.id}"
-                              onmouseover="this.style.backgroundColor='#484848'"
-                              onmouseout="this.style.backgroundColor='#383838'">
+                              style="display: flex; align-items: center; gap: 15px; padding: 15px; background-color: #282828; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; border: 2px solid transparent;"
+                          data-playlist-id="${playlist.id}"
+                          onmouseover="this.style.backgroundColor='#404040'; this.style.borderColor='#bb86fc';"
+                          onmouseout="this.style.backgroundColor='#282828'; this.style.borderColor='transparent';">
                             <img src="${playlist.cover_image_url || '/static/images/default_cover.png'}" 
                                  alt="${playlist.name}" 
                                  style="width: 50px; height: 50px; border-radius: 5px; object-fit: cover;">
                             <div>
-                                <div style="color: #ffffff; font-weight: 600;">${playlist.name}</div>
+                                <div style="color: #ffffff; font-weight: 600; font-size: 1rem;">${playlist.name}</div>
                                 <div style="color: #b3b3b3; font-size: 0.9rem;">${playlist.song_count || 0} canción${(playlist.song_count || 0) !== 1 ? 'es' : ''}</div>
                             </div>
                         </div>`
@@ -273,8 +273,8 @@
                     title: 'Añadir a playlist',
                     html: `
                         <div style="text-align: left;">
-                            <p style="margin-bottom: 15px; color: #e0e0e0;">Selecciona una playlist para "${songName}":</p>
-                            <div style="max-height: 300px; overflow-y: auto;">
+                            <p style="margin-bottom: 15px; color: #e0e0e0; font-size: 1rem;">Selecciona una playlist para "${songName}":</p>
+                            <div style="max-height: 300px; overflow-y: auto; background-color: #1a1a1a; border-radius: 8px; padding: 10px;">
                                 ${playlistOptions}
                             </div>
                         </div>
@@ -282,8 +282,16 @@
                     showCancelButton: true,
                     showConfirmButton: false,
                     cancelButtonText: 'Cancelar',
+                    background: '#181818',
+                    color: '#ffffff',
+                    confirmButtonColor: '#bb86fc',
+                    cancelButtonColor: '#666666',
+                    customClass: {
+                        popup: 'dark-modal',
+                        title: 'dark-modal-title',
+                        htmlContainer: 'dark-modal-content'
+                    },
                     didOpen: () => {
-
                         document.querySelectorAll('.playlist-option').forEach(option => {
                             option.addEventListener('click', function() {
                                 const playlistId = this.dataset.playlistId;
@@ -301,7 +309,9 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'No se pudieron cargar las playlists. Revisa la consola para más detalles.'
+                    text: 'No se pudieron cargar las playlists. Revisa la consola para más detalles.',
+                    background: '#181818',
+                    color: '#ffffff'
                 });
             });
     }

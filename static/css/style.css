@@ -1241,3 +1241,29 @@ login-providers {
     gap: 8px;
     z-index: 20; /* Mayor z-index para asegurar que esté encima */
 }
+
+/* Estilos para modales oscuros */
+.dark-modal {
+    background-color: #181818 !important;
+    border: 1px solid #404040 !important;
+}
+
+.dark-modal-title {
+    color: #ffffff !important;
+    font-size: 1.5rem !important;
+}
+
+.dark-modal-content {
+    color: #e0e0e0 !important;
+}
+
+/* Mejorar el contraste de SweetAlert en tema oscuro */
+.swal2-popup.dark-modal .swal2-styled.swal2-cancel {
+    background-color: #404040 !important;
+    color: #ffffff !important;
+    border: 1px solid #666666 !important;
+}
+
+.swal2-popup.dark-modal .swal2-styled.swal2-cancel:hover {
+    background-color: #565656 !important;
+}
