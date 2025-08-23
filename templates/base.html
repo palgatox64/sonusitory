@@ -657,6 +657,7 @@
         initializeAvatarUpload();
         initializeSongMenuListeners();
         initializeCreatePlaylistButton();
+        initializeEditPlaylistButton();
         initializeUserMenuToggle();
     });
 
@@ -675,14 +676,65 @@
                             <label for="playlist-name" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Nombre de la playlist:</label>
                             <input type="text" id="playlist-name" class="swal2-input" placeholder="Ingresa el nombre..." style="margin-bottom: 1rem;">
                             
-                            <label for="playlist-cover" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Imagen de portada (opcional):</label>
-                            <input type="file" id="playlist-cover" accept="image/*" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                            <small style="color: #666; display: block; margin-top: 0.5rem;">Si no seleccionas una imagen, se usará la portada por defecto.</small>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Imagen de portada (opcional):</label>
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 1rem;">
+                                <img id="playlist-cover-preview" 
+                                     src="/static/images/default_cover.png" 
+                                     alt="Vista previa" 
+                                     style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 2px solid #ccc;">
+                                <div>
+                                    <button type="button" id="change-playlist-cover-button" 
+                                            style="background: linear-gradient(45deg, #bb86fc, #6200ea); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(187, 134, 252, 0.3);"
+                                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(187, 134, 252, 0.4)'"
+                                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(187, 134, 252, 0.3)'">
+                                        Cambiar Imagen
+                                    </button>
+                                    <input type="file" id="playlist-cover" accept="image/*" style="display: none;">
+                                    <br>
+                                    <small style="color: #666; display: block; margin-top: 0.5rem;">Si no seleccionas una imagen, se usará la portada por defecto.</small>
+                                </div>
+                            </div>
                         </div>
                     `,
                     showCancelButton: true,
                     confirmButtonText: 'Crear',
                     cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#bb86fc',
+                    cancelButtonColor: '#dc3545',
+                    didOpen: () => {
+                        // Configurar el botón de cambiar imagen
+                        const changeCoverButton = document.getElementById('change-playlist-cover-button');
+                        const coverInput = document.getElementById('playlist-cover');
+                        const coverPreview = document.getElementById('playlist-cover-preview');
+                        
+                        changeCoverButton.addEventListener('click', () => {
+                            coverInput.click();
+                        });
+                        
+                        coverInput.addEventListener('change', (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                // Validar tipo de archivo
+                                if (!file.type.startsWith('image/')) {
+                                    Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
+                                    return;
+                                }
+                                
+                                // Validar tamaño de archivo (máximo 5MB)
+                                if (file.size > 5 * 1024 * 1024) {
+                                    Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
+                                    return;
+                                }
+                                
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    coverPreview.src = e.target.result;
+                                    coverPreview.style.border = '2px solid #bb86fc';
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        });
+                    },
                     preConfirm: () => {
                         const name = document.getElementById('playlist-name').value;
                         const coverFile = document.getElementById('playlist-cover').files[0];
@@ -774,6 +826,179 @@
         }
     }
 
+    function initializeEditPlaylistButton() {
+        const editPlaylistBtn = document.getElementById('edit-playlist-btn');
+        if (editPlaylistBtn) {
+            // Remover event listeners previos para evitar duplicados
+            editPlaylistBtn.replaceWith(editPlaylistBtn.cloneNode(true));
+            const newBtn = document.getElementById('edit-playlist-btn');
+            
+            newBtn.addEventListener('click', function() {
+                const playlistId = newBtn.dataset.playlistId;
+                const currentName = newBtn.dataset.playlistName;
+                const currentCover = newBtn.dataset.playlistCover || '/static/images/default_cover.png';
+                
+                // Escapar comillas para evitar problemas en el HTML
+                const escapedName = currentName.replace(/"/g, '&quot;');
+                const escapedCover = currentCover.replace(/"/g, '&quot;');
+                
+                Swal.fire({
+                    title: 'Editar Playlist',
+                    html: `
+                        <div style="text-align: left;">
+                            <label for="edit-playlist-name" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Nombre de la playlist:</label>
+                            <input type="text" id="edit-playlist-name" class="swal2-input" value="${escapedName}" style="margin-bottom: 1rem;">
+                            
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Imagen de portada (opcional):</label>
+                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 1rem;">
+                                <img id="edit-playlist-cover-preview" 
+                                     src="${escapedCover}" 
+                                     alt="Vista previa" 
+                                     style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover; border: 2px solid #ccc;">
+                                <div>
+                                    <button type="button" id="change-edit-playlist-cover-button" 
+                                            style="background: linear-gradient(45deg, #bb86fc, #6200ea); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(187, 134, 252, 0.3);"
+                                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(187, 134, 252, 0.4)'"
+                                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(187, 134, 252, 0.3)'">
+                                        Cambiar Imagen
+                                    </button>
+                                    <input type="file" id="edit-playlist-cover" accept="image/*" style="display: none;">
+                                    <br>
+                                    <small style="color: #666; display: block; margin-top: 0.5rem;">Si no seleccionas una imagen nueva, se mantendrá la actual.</small>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Guardar Cambios',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#bb86fc',
+                    cancelButtonColor: '#dc3545',
+                    didOpen: () => {
+                        // Configurar el botón de cambiar imagen
+                        const changeCoverButton = document.getElementById('change-edit-playlist-cover-button');
+                        const coverInput = document.getElementById('edit-playlist-cover');
+                        const coverPreview = document.getElementById('edit-playlist-cover-preview');
+                        
+                        changeCoverButton.addEventListener('click', () => {
+                            coverInput.click();
+                        });
+                        
+                        coverInput.addEventListener('change', (e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                // Validar tipo de archivo
+                                if (!file.type.startsWith('image/')) {
+                                    Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
+                                    return;
+                                }
+                                
+                                // Validar tamaño de archivo (máximo 5MB)
+                                if (file.size > 5 * 1024 * 1024) {
+                                    Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
+                                    return;
+                                }
+                                
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    coverPreview.src = e.target.result;
+                                    coverPreview.style.border = '2px solid #bb86fc';
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        });
+                    },
+                    preConfirm: () => {
+                        const name = document.getElementById('edit-playlist-name').value;
+                        const coverFile = document.getElementById('edit-playlist-cover').files[0];
+                        
+                        if (!name || name.trim() === '') {
+                            Swal.showValidationMessage('Debes ingresar un nombre para la playlist');
+                            return false;
+                        }
+                        
+                        return { name: name.trim(), coverFile: coverFile };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const { name, coverFile } = result.value;
+                        
+                        // Obtener el token CSRF de diferentes formas
+                        let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                        if (!csrfToken) {
+                            csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                        }
+                        if (!csrfToken) {
+                            const cookies = document.cookie.split(';');
+                            for (let cookie of cookies) {
+                                const [cookieName, value] = cookie.trim().split('=');
+                                if (cookieName === 'csrftoken') {
+                                    csrfToken = value;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Mostrar loading si hay imagen
+                        if (coverFile) {
+                            Swal.fire({
+                                title: 'Actualizando playlist...',
+                                text: 'Subiendo imagen, por favor espera.',
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                didOpen: () => Swal.showLoading()
+                            });
+                        }
+                        
+                        const formData = new FormData();
+                        formData.append('csrfmiddlewaretoken', csrfToken);
+                        formData.append('name', name);
+                        if (coverFile) {
+                            formData.append('cover_image', coverFile);
+                        }
+                        
+                        fetch(`/edit-playlist/${playlistId}/`, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                const Toast = Swal.mixin({
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true
+                                });
+                                Toast.fire({
+                                    icon: 'success',
+                                    title: `Playlist "${name}" actualizada exitosamente`
+                                });
+                                
+                                // Recargar la página actual via HTMX
+                                htmx.ajax('GET', window.location.pathname, {
+                                    target: '.main-content',
+                                    swap: 'innerHTML'
+                                });
+                                
+                            } else {
+                                throw new Error('Error al actualizar la playlist');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'No se pudo actualizar la playlist'
+                            });
+                        });
+                    }
+                });
+            });
+        }
+    }
+
     document.body.addEventListener('htmx:beforeRequest', function(event) {
         if (event.detail.elt.id !== 'scan-button' && event.detail.elt.id !== 'quick-scan-button' && event.detail.elt.id !== 'cover-scan-button') {
             Swal.fire({
@@ -800,6 +1025,7 @@
         initializeAvatarUpload();
         initializeSongMenuListeners();
         initializeCreatePlaylistButton();
+        initializeEditPlaylistButton();
         initializeUserMenuToggle();
 
         const audioPlayer = document.getElementById('main-audio-player');
@@ -815,6 +1041,7 @@
         initializeAvatarUpload();
         initializeSongMenuListeners();
         initializeCreatePlaylistButton();
+        initializeEditPlaylistButton();
         initializeUserMenuToggle();
 
         const audioPlayer = document.getElementById('main-audio-player');

@@ -24,6 +24,14 @@
                class="btn">
                 Volver a Playlists
             </a>
+            <button 
+                id="edit-playlist-btn" 
+                class="btn"
+                data-playlist-id="{{ playlist.id }}"
+                data-playlist-name="{{ playlist.name }}"
+                data-playlist-cover="{{ playlist.cover_image_url|default:'' }}">
+                Editar Playlist
+            </button>
         </p>
     </div>
     

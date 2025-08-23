@@ -14,6 +14,7 @@ import os
 import io
 import json
 import requests
+import requests
 from django.utils import timezone
 from django.db import models
 
@@ -474,6 +475,43 @@ def create_playlist(request):
             
             return JsonResponse({'success': True, 'playlist_id': playlist.id})
         return JsonResponse({'error': 'Nombre requerido'}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def edit_playlist(request, playlist_id):
+    if request.method == 'POST':
+        try:
+            playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
+            name = request.POST.get('name')
+            
+            if name:
+                playlist.name = name
+                
+                # Manejar la imagen si se proporciona
+                if request.FILES.get('cover_image'):
+                    client_id = os.environ.get('IMGUR_CLIENT_ID')
+                    if client_id:
+                        try:
+                            image = request.FILES['cover_image']
+                            headers = {'Authorization': f'Client-ID {client_id}'}
+                            
+                            response = requests.post(
+                                'https://api.imgur.com/3/image',
+                                headers=headers,
+                                files={'image': image}
+                            )
+                            
+                            if response.status_code == 200:
+                                data = response.json()
+                                playlist.cover_image_url = data['data']['link']
+                        except Exception as e:
+                            print(f"Error subiendo imagen: {e}")
+                
+                playlist.save()
+                return JsonResponse({'success': True, 'playlist_id': playlist.id})
+            return JsonResponse({'error': 'Nombre requerido'}, status=400)
+        except Playlist.DoesNotExist:
+            return JsonResponse({'error': 'Playlist no encontrada'}, status=404)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 @login_required
