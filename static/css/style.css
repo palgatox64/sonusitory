@@ -476,7 +476,7 @@ login-providers {
 }
 
 .like-btn {
-    display: none;
+    display: none !important; /* Oculto por defecto */
     background: rgba(255, 255, 255, 0.1);
     border: none;
     color: #b3b3b3;
@@ -488,35 +488,41 @@ login-providers {
     justify-content: center;
     transition: all 0.2s ease;
     font-size: 16px;
+    z-index: 10;
 }
 
-.like-btn:hover {
-    background-color: rgba(187, 134, 252, 0.2);
+/* Mostrar botón de like cuando la canción está liked */
+.like-btn.liked {
+    display: flex !important;
     color: #bb86fc;
+    background: rgba(187, 134, 252, 0.2);
 }
 
-#song-list li:hover .like-btn,
-.like-btn.liked {
-    display: flex;
+/* Mostrar botón de like al hacer hover sobre la canción */
+#song-list li:hover .like-btn {
+    display: flex !important;
 }
 
-.like-btn.liked {
-    background: rgba(187, 134, 252, 0.2) !important;
+/* Para playlists también */
+.sortable-song-item:hover .like-btn {
+    display: flex !important;
+}
+
+/* Efectos de hover para el botón de like */
+.like-btn:hover {
     color: #bb86fc !important;
+    background: rgba(187, 134, 252, 0.3) !important;
+    transform: scale(1.1);
 }
 
 .like-btn.liked:hover {
-    background: rgba(187, 134, 252, 0.3) !important;
+    background: rgba(187, 134, 252, 0.4) !important;
     color: #ffffff !important;
 }
 
-#song-list li:hover .like-btn,
-.like-btn.liked {
-    display: flex;
-}
-
+/* Asegurar que el botón del menú también se comporte igual */
 .song-menu-btn {
-    display: none;
+    display: none !important; /* Oculto por defecto */
     background-color: rgba(255, 255, 255, 0.1);
     border: none;
     color: #fff;
@@ -529,9 +535,15 @@ login-providers {
     transition: background-color 0.2s ease;
 }
 
+/* Mostrar botón del menú al hacer hover */
 #song-list li:hover .song-menu-btn,
 .song-menu-btn.is-visible {
-    display: flex;
+    display: flex !important;
+}
+
+/* Para playlists también */
+.sortable-song-item:hover .song-menu-btn {
+    display: flex !important;
 }
 
 .song-menu-btn:hover {
@@ -894,14 +906,21 @@ login-providers {
     box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27) !important;
 }
 
-/* Remover la animación existente que está causando problemas */
-@keyframes hover-rojo {
-    0% {
-        background-color: #ffffff;
-    }
-    100% {
-        background-color: #dc3545;
-    }
+/* Regla más específica para asegurar el comportamiento correcto */
+#song-list li .like-btn:not(.liked),
+.sortable-song-item .like-btn:not(.liked) {
+    display: none !important;
+}
+
+#song-list li:hover .like-btn:not(.liked),
+.sortable-song-item:hover .like-btn:not(.liked) {
+    display: flex !important;
+}
+
+/* Los botones con like siempre visibles */
+#song-list li .like-btn.liked,
+.sortable-song-item .like-btn.liked {
+    display: flex !important;
 }
 
 /* Estilos para playlist sortable */

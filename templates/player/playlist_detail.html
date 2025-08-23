@@ -265,25 +265,29 @@ function initializeRemoveFromPlaylist() {
 }
 
 function initializeLikeButtons() {
+    console.log('Inicializando botones de like en playlist...');
+    // Limpiar event listeners anteriores
     document.querySelectorAll('.like-btn').forEach(button => {
-        // Limpiar event listeners anteriores
-        button.replaceWith(button.cloneNode(true));
+        const newButton = button.cloneNode(true);
+        button.parentNode.replaceChild(newButton, button);
     });
     
-    // Reinicializar event listeners
+    // Reinicializar event listeners usando la función global
     document.querySelectorAll('.like-btn').forEach(button => {
         button.addEventListener('click', function(e) {
             e.stopPropagation();
             const songId = this.dataset.songId;
             
-            // Usar la función global de like si existe
+            // Usar la función global de like
             if (typeof window.handleLikeClick === 'function') {
                 window.handleLikeClick(songId, this);
             } else {
-                console.log('Función de like no disponible');
+                console.error('Función global handleLikeClick no disponible');
             }
         });
     });
+    
+    console.log('Botones de like en playlist inicializados:', document.querySelectorAll('.like-btn').length);
 }
 
 // Reproducir canción al hacer clic (excluyendo drag handle y botones)

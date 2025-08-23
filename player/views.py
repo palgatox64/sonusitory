@@ -199,7 +199,6 @@ def artist_list(request):
 
 @login_required
 def folder_browser(request, folder_id=None):
-
     try:
         creds_model = GoogleCredential.objects.get(user=request.user)
         creds = Credentials.from_authorized_user_info(json.loads(creds_model.token_json))
