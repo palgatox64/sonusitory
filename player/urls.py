@@ -24,6 +24,13 @@ urlpatterns = [
     path('album/<int:album_id>/cover/', views.album_cover, name='album_cover'),
     path('liked/', views.liked_songs, name='liked_songs'),
     
+    path('playlists/', views.playlist_list, name='playlist_list'),
+    path('playlist/<int:playlist_id>/', views.playlist_detail, name='playlist_detail'),
+    path('playlist/create/', views.create_playlist, name='create_playlist'),
+    path('get-user-playlists/', views.get_user_playlists, name='get_user_playlists'),
+    path('add-to-playlist/<str:song_id>/<int:playlist_id>/', views.add_to_playlist, name='add_to_playlist'),
+
+    
     
     path('play/<str:file_id>/', views.play_song, name='play_song'),
     

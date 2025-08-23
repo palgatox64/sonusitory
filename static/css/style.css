@@ -167,6 +167,21 @@ a:hover {
     border-bottom: 1px solid #282828;
 }
 
+.action-bar {
+    margin-bottom: 2rem;
+}
+
+.action-bar p {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin: 0;
+}
+
+.action-bar .btn {
+    margin: 0;
+}
+
 .auth-form-container {
     max-width: 450px;
     margin: 4rem auto;
@@ -425,6 +440,7 @@ login-providers {
     display: flex;
     align-items: center;
     gap: 8px;
+    z-index: 10;
 }
 
 .like-btn {
@@ -496,40 +512,75 @@ login-providers {
     right: 0;
     top: 40px;
     background-color: #282828;
-    min-width: 200px;
+    min-width: 180px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
-    z-index: 10;
+    z-index: 100;
     border-radius: 4px;
     overflow: hidden;
+    border: 1px solid #404040;
+    white-space: nowrap;
 }
 
 .song-menu-dropdown.show {
     display: block;
 }
 
-.song-menu-dropdown .queue-add-btn {
+/* Añadir clase para cuando el menú debe aparecer hacia arriba */
+.song-menu-dropdown.show-above {
+    top: auto;
+    bottom: 40px;
+}
+
+.song-menu-dropdown .queue-add-btn,
+.song-menu-dropdown .add-to-playlist-btn {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     background: none;
     border: none;
     color: #e0e0e0;
-    padding: 20px;
+    padding: 12px 16px;
     width: 100%;
     text-align: left;
     cursor: pointer;
-    border-radius: 5px;
-    font-size: 0.9rem;
+    border-radius: 0;
+    font-size: 0.85rem;
     font-weight: 500;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid #383838;
+    position: relative;
+    box-sizing: border-box;
+    height: 44px;
 }
 
-.song-menu-dropdown .queue-add-btn:hover {
+.song-menu-dropdown .add-to-playlist-btn {
+    border-bottom: none;
+}
+
+.song-menu-dropdown .queue-add-btn:hover,
+.song-menu-dropdown .add-to-playlist-btn:hover {
     background-color: #404040;
     color: #ffffff;
 }
 
+.song-menu-dropdown .queue-add-btn img,
+.song-menu-dropdown .add-to-playlist-btn img {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.song-menu-dropdown .queue-add-btn span,
+.song-menu-dropdown .add-to-playlist-btn span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
 #song-list li.menu-open {
-    z-index: 2;
+    z-index: 101;
+    position: relative;
 }
 
 .login-providers .btn {
@@ -602,6 +653,108 @@ login-providers {
 
 .songs-section {
     margin-top: 20px;
+}
+
+/* Estilos específicos para la lista de playlists */
+.playlist-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.playlist-list a {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    padding: 25px;
+    background-color: #282828;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #ffffff;
+    transition: all 0.3s ease-in-out;
+    min-height: 120px;
+}
+
+.playlist-list a:hover {
+    background-color: #404040;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.playlist-list img {
+    width: 120px !important;
+    height: 120px !important;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+
+.playlist-list .playlist-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.playlist-list .playlist-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.playlist-list .playlist-count {
+    font-size: 1rem;
+    color: #b3b3b3;
+    margin: 0;
+    font-weight: 400;
+}
+
+/* Responsive para tablets */
+@media (max-width: 1024px) and (min-width: 768px) {
+    .playlist-list a {
+        padding: 20px;
+        gap: 20px;
+        min-height: 100px;
+    }
+    
+    .playlist-list img {
+        width: 100px !important;
+        height: 100px !important;
+    }
+    
+    .playlist-list .playlist-name {
+        font-size: 1.3rem;
+    }
+    
+    .playlist-list .playlist-count {
+        font-size: 0.95rem;
+    }
+}
+
+/* Responsive para móviles */
+@media (max-width: 767px) {
+    .playlist-list a {
+        padding: 15px;
+        gap: 15px;
+        min-height: 70px;
+    }
+    
+    .playlist-list img {
+        width: 60px !important;
+        height: 60px !important;
+        border-radius: 8px;
+    }
+    
+    .playlist-list .playlist-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    .playlist-list .playlist-count {
+        font-size: 0.85rem;
+    }
 }
 
 @media (max-width: 767px) {

@@ -5,7 +5,7 @@ from google_auth_oauthlib.flow import Flow
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
-from .models import UserProfile, GoogleCredential, Artist, Album, Song, LikedSong
+from .models import UserProfile, GoogleCredential, Artist, Album, Song, LikedSong, Playlist
 from django.http import JsonResponse
 from .tasks import scan_user_library
 from celery.result import AsyncResult
@@ -15,6 +15,7 @@ import io
 import json
 import requests
 from django.utils import timezone
+from django.db import models
 
 
 CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(__file__), '..', 'credentials', 'client_secret.json')
@@ -284,6 +285,8 @@ def folder_browser(request, folder_id=None):
                 
             except (Artist.DoesNotExist, Album.DoesNotExist):
                 pass
+
+    playlists = Playlist.objects.filter(user=request.user)
     
     context = {
         'current_folder': current_folder,
@@ -294,6 +297,7 @@ def folder_browser(request, folder_id=None):
         'songs': songs,
         'liked_songs_ids': liked_songs_ids,
         'is_root': current_folder_id == root_folder_id,
+        'playlists': playlists,
     }
     
     return render(request, 'player/folder_browser.html', context)
@@ -429,3 +433,80 @@ def toggle_like_song(request, song_id):
             return JsonResponse({'error': 'Canción no encontrada'}, status=404)
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def playlist_list(request):
+    playlists = Playlist.objects.filter(user=request.user).prefetch_related('songs')
+    return render(request, 'player/playlist_list.html', {'playlists': playlists})
+
+@login_required
+def playlist_detail(request, playlist_id):
+    playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
+    return render(request, 'player/playlist_detail.html', {'playlist': playlist})
+
+@login_required
+def create_playlist(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        if name:
+            playlist = Playlist.objects.create(user=request.user, name=name)
+            
+            # Manejar la imagen si se proporciona
+            if request.FILES.get('cover_image'):
+                client_id = os.environ.get('IMGUR_CLIENT_ID')
+                if client_id:
+                    try:
+                        image = request.FILES['cover_image']
+                        headers = {'Authorization': f'Client-ID {client_id}'}
+                        
+                        response = requests.post(
+                            'https://api.imgur.com/3/image',
+                            headers=headers,
+                            files={'image': image}
+                        )
+                        
+                        if response.status_code == 200:
+                            data = response.json()
+                            playlist.cover_image_url = data['data']['link']
+                            playlist.save()
+                    except Exception as e:
+                        print(f"Error subiendo imagen: {e}")
+            
+            return JsonResponse({'success': True, 'playlist_id': playlist.id})
+        return JsonResponse({'error': 'Nombre requerido'}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def add_to_playlist(request, song_id, playlist_id):
+    if request.method == 'POST':
+        try:
+            playlist = Playlist.objects.get(id=playlist_id, user=request.user)
+            song = Song.objects.get(google_file_id=song_id)
+            
+            # Verificar si la canción ya está en la playlist
+            if playlist.songs.filter(id=song.id).exists():
+                return JsonResponse({'error': 'La canción ya está en esta playlist'}, status=400)
+            
+            playlist.songs.add(song)
+            return JsonResponse({'success': True})
+        except Playlist.DoesNotExist:
+            return JsonResponse({'error': 'Playlist no encontrada'}, status=404)
+        except Song.DoesNotExist:
+            return JsonResponse({'error': 'Canción no encontrada'}, status=404)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+def get_user_playlists(request):
+    playlists = Playlist.objects.filter(user=request.user).annotate(
+        song_count=models.Count('songs')
+    )
+    playlists_data = [
+        {
+            'id': playlist.id,
+            'name': playlist.name,
+            'cover_image_url': playlist.cover_image_url,
+            'song_count': playlist.song_count
+        }
+        for playlist in playlists
+    ]
+    return JsonResponse(playlists_data, safe=False)

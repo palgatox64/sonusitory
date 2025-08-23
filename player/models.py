@@ -50,6 +50,17 @@ class Song(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     liked_by = models.ManyToManyField(User, related_name='liked_songs', through='LikedSong')
     
+class Playlist(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200)
+    songs = models.ManyToManyField(Song, blank=True)
+    cover_image_url = models.URLField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    
 class LikedSong(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     song = models.ForeignKey(Song, on_delete=models.CASCADE)

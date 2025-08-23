@@ -24,7 +24,7 @@
 <body>
 
     <nav style="padding: 1rem 2rem; background-color: #181818; border-bottom: 1px solid #282828; display: flex; justify-content: space-between; align-items: center;">
-        
+
         {% if request.resolver_match.url_name == 'login' or request.resolver_match.url_name == 'register' %}
             <img src="{% static 'images/sonusitory_with_icon.png' %}" alt="Sonusitory" style="height: 40px;">
         {% else %}
@@ -35,7 +35,7 @@
                 <img src="{% static 'images/sonusitory_with_icon.png' %}" alt="Sonusitory" style="height: 40px;">
             </a>
         {% endif %}
-        
+
         <div>
             {% if user.is_authenticated %}
                 <div class="dropdown">
@@ -80,7 +80,7 @@
 
     {% block extra_scripts %}
     <script>
-    
+
     let songQueue = [];
     let songMenuListenersInitialized = false;
 
@@ -88,7 +88,7 @@
         const songUrl = `/play/${songId}/`;
         const nowPlayingElem = document.getElementById('now-playing');
         const audioPlayer = document.getElementById('main-audio-player');
-        
+
         if (nowPlayingElem && audioPlayer) {
             nowPlayingElem.textContent = `Reproduciendo: ${songName}`;
             audioPlayer.src = songUrl;
@@ -103,10 +103,10 @@
 
         const avatarInput = document.getElementById('avatar-input');
         const avatarPreview = document.getElementById('avatar-preview');
-        let originalAvatarSrc = avatarPreview.src; 
+        let originalAvatarSrc = avatarPreview.src;
 
         changeAvatarButton.addEventListener('click', () => {
-            originalAvatarSrc = avatarPreview.src; 
+            originalAvatarSrc = avatarPreview.src;
             avatarInput.click();
         });
 
@@ -182,7 +182,7 @@
         const accountUnlinkButton = document.getElementById('account-unlink-button');
         if (accountUnlinkButton) {
             accountUnlinkButton.addEventListener('click', function(event) {
-                event.preventDefault(); 
+                event.preventDefault();
                 const hasCredentials = event.target.dataset.hasCredentials === 'true';
 
                 if (hasCredentials) {
@@ -212,14 +212,129 @@
         }
     }
 
+    function openPlaylistModal(songId, songName) {
+        // Obtener las playlists del usuario
+        fetch('/get-user-playlists/')
+            .then(response => response.json())
+            .then(playlists => {
+                let playlistOptions = '';
+                
+                if (playlists.length === 0) {
+                    playlistOptions = '<p style="text-align: center; color: #b3b3b3; margin: 20px 0;">No tienes playlists creadas. <br><a href="/playlists/" style="color: #bb86fc;">Crear una nueva playlist</a></p>';
+                } else {
+                    playlistOptions = playlists.map(playlist => 
+                        `<div class="playlist-option" 
+                              style="display: flex; align-items: center; gap: 15px; padding: 15px; background-color: #383838; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease;"
+                              data-playlist-id="${playlist.id}"
+                              onmouseover="this.style.backgroundColor='#484848'"
+                              onmouseout="this.style.backgroundColor='#383838'">
+                            <img src="${playlist.cover_image_url || '/static/images/default_cover.png'}" 
+                                 alt="${playlist.name}" 
+                                 style="width: 50px; height: 50px; border-radius: 5px; object-fit: cover;">
+                            <div>
+                                <div style="color: #ffffff; font-weight: 600;">${playlist.name}</div>
+                                <div style="color: #b3b3b3; font-size: 0.9rem;">${playlist.song_count} canción${playlist.song_count !== 1 ? 'es' : ''}</div>
+                            </div>
+                        </div>`
+                    ).join('');
+                }
+
+                Swal.fire({
+                    title: 'Añadir a playlist',
+                    html: `
+                        <div style="text-align: left;">
+                            <p style="margin-bottom: 15px; color: #e0e0e0;">Selecciona una playlist para "${songName}":</p>
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                ${playlistOptions}
+                            </div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    showConfirmButton: false,
+                    cancelButtonText: 'Cancelar',
+                    didOpen: () => {
+                        // Añadir event listeners a las opciones de playlist
+                        document.querySelectorAll('.playlist-option').forEach(option => {
+                            option.addEventListener('click', function() {
+                                const playlistId = this.dataset.playlistId;
+                                const playlistName = this.querySelector('div div').textContent;
+                                
+                                // Añadir canción a la playlist
+                                addSongToPlaylist(songId, playlistId, songName, playlistName);
+                                Swal.close();
+                            });
+                        });
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error obteniendo playlists:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudieron cargar las playlists'
+                });
+            });
+    }
+
+    function addSongToPlaylist(songId, playlistId, songName, playlistName) {
+        // Obtener token CSRF
+        let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (!csrfToken) {
+            csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        }
+        if (!csrfToken) {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                const [name, value] = cookie.trim().split('=');
+                if (name === 'csrftoken') {
+                    csrfToken = value;
+                    break;
+                }
+            }
+        }
+
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        fetch(`/add-to-playlist/${songId}/${playlistId}/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+                Toast.fire({
+                    icon: 'success',
+                    title: `"${songName}" añadida a "${playlistName}"`
+                });
+            } else {
+                throw new Error('Error al añadir a playlist');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo añadir la canción a la playlist'
+            });
+        });
+    }
 
     function initializeSongMenuListeners() {
         if (songMenuListenersInitialized) return;
         songMenuListenersInitialized = true;
-        
+
         document.body.addEventListener('click', function(event) {
             const menuButton = event.target.closest('.song-menu-btn');
-            
+
             if (menuButton) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -240,8 +355,29 @@
                     parentLi.classList.add('menu-open');
                     dropdown.classList.add('show');
                     menuButton.classList.add('is-visible');
+                    
+                    // Verificar si el menú se sale de la pantalla (mejorado)
+                    setTimeout(() => {
+                        const rect = dropdown.getBoundingClientRect();
+                        const windowHeight = window.innerHeight;
+                        const playerHeight = 120; // Altura aproximada del reproductor
+                        
+                        if (rect.bottom > windowHeight - playerHeight - 20) {
+                            dropdown.classList.add('show-above');
+                        } else {
+                            dropdown.classList.remove('show-above');
+                        }
+                    }, 10); // Pequeño delay para que el dropdown se renderice primero
                 }
                 return;
+            }
+
+            const addToPlaylistButton = event.target.closest('.add-to-playlist-btn');
+            if (addToPlaylistButton) {
+                event.stopPropagation();
+                const songId = addToPlaylistButton.dataset.songId;
+                const songName = addToPlaylistButton.dataset.songName;
+                openPlaylistModal(songId, songName);
             }
 
 
@@ -250,7 +386,7 @@
                 event.stopPropagation();
                 const songId = queueButton.dataset.songId;
                 const songName = queueButton.dataset.songName;
-                
+
                 if (songId && songName) {
                     songQueue.push({ id: songId, name: songName });
 
@@ -283,10 +419,10 @@
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
                 const songLi = likeButton.closest('li');
                 const isInLikedSongsPage = window.location.pathname === '/liked/' || window.location.pathname.includes('/liked/');
-                
+
                 const formData = new FormData();
                 formData.append('csrfmiddlewaretoken', csrfToken);
-                
+
                 fetch(`/toggle-like/${songId}/`, {
                     method: 'POST',
                     body: formData
@@ -297,39 +433,39 @@
                         if (data.liked) {
                             likeButton.classList.add('liked');
                             const Toast = Swal.mixin({
-                                toast: true, 
-                                position: 'top-end', 
-                                showConfirmButton: false, 
-                                timer: 3000, 
+                                toast: true,
+                                position: 'top-end',
+                                showConfirmButton: false,
+                                timer: 3000,
                                 timerProgressBar: true,
                                 didOpen: (toast) => {
                                     toast.onmouseenter = Swal.stopTimer;
                                     toast.onmouseleave = Swal.resumeTimer;
                                 }
                             });
-                            Toast.fire({ 
-                                icon: 'success', 
-                                title: `'${songName}' añadida a tus Me Gusta` 
+                            Toast.fire({
+                                icon: 'success',
+                                title: `'${songName}' añadida a tus Me Gusta`
                             });
                         } else {
                             likeButton.classList.remove('liked');
-                            
+
                             const Toast = Swal.mixin({
-                                toast: true, 
-                                position: 'top-end', 
+                                toast: true,
+                                position: 'top-end',
                                 showConfirmButton: true,
                                 confirmButtonText: 'Deshacer',
-                                timer: 5000, 
+                                timer: 5000,
                                 timerProgressBar: true,
                                 didOpen: (toast) => {
                                     toast.onmouseenter = Swal.stopTimer;
                                     toast.onmouseleave = Swal.resumeTimer;
                                 }
                             });
-                            
-                            Toast.fire({ 
-                                icon: 'info', 
-                                title: `'${songName}' eliminada de tus Me Gusta` 
+
+                            Toast.fire({
+                                icon: 'info',
+                                title: `'${songName}' eliminada de tus Me Gusta`
                             }).then((result) => {
                                 if (result.isConfirmed) {
                                     // Deshacer la acción - volver a dar like con fecha original
@@ -337,7 +473,7 @@
                                     undoFormData.append('csrfmiddlewaretoken', csrfToken);
                                     undoFormData.append('undo', 'true');
                                     undoFormData.append('original_date', data.original_date);
-                                    
+
                                     fetch(`/toggle-like/${songId}/`, {
                                         method: 'POST',
                                         body: undoFormData
@@ -346,59 +482,59 @@
                                     .then(undoData => {
                                         if (undoData.liked) {
                                             likeButton.classList.add('liked');
-                                            
+
 
                                             if (isInLikedSongsPage && !document.contains(songLi)) {
                                                 window.location.reload();
                                             }
-                                            
+
 
                                             const UndoToast = Swal.mixin({
-                                                toast: true, 
-                                                position: 'top-end', 
-                                                showConfirmButton: false, 
-                                                timer: 2500, 
+                                                toast: true,
+                                                position: 'top-end',
+                                                showConfirmButton: false,
+                                                timer: 2500,
                                                 timerProgressBar: true
                                             });
-                                            UndoToast.fire({ 
-                                                icon: 'success', 
-                                                title: `'${songName}' restaurada a tus Me Gusta` 
+                                            UndoToast.fire({
+                                                icon: 'success',
+                                                title: `'${songName}' restaurada a tus Me Gusta`
                                             });
                                         }
                                     })
                                     .catch(error => {
                                         console.error('Error al deshacer:', error);
                                         const ErrorToast = Swal.mixin({
-                                            toast: true, 
-                                            position: 'top-end', 
-                                            showConfirmButton: false, 
-                                            timer: 3000, 
+                                            toast: true,
+                                            position: 'top-end',
+                                            showConfirmButton: false,
+                                            timer: 3000,
                                             timerProgressBar: true
                                         });
-                                        ErrorToast.fire({ 
-                                            icon: 'error', 
-                                            title: 'Error al deshacer la acción' 
+                                        ErrorToast.fire({
+                                            icon: 'error',
+                                            title: 'Error al deshacer la acción'
                                         });
                                     });
                                 }
                             });
-                            
+
                             if (isInLikedSongsPage && songLi) {
                                 setTimeout(() => {
                                     if (!likeButton.classList.contains('liked')) {
                                         songLi.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                                         songLi.style.opacity = '0';
                                         songLi.style.transform = 'translateX(-20px)';
-                                        
+
                                         setTimeout(() => {
                                             if (!likeButton.classList.contains('liked')) {
                                                 songLi.remove();
-                                                
+
 
                                                 const songList = document.getElementById('song-list');
                                                 if (songList && songList.children.length === 0) {
                                                     songList.style.display = 'none';
-                                                    
+
                                                     const emptyMessage = document.createElement('p');
                                                     emptyMessage.textContent = 'No tienes canciones marcadas como "Me gusta" aún.';
                                                     songList.parentNode.insertBefore(emptyMessage, songList.nextSibling);
@@ -414,15 +550,15 @@
                 .catch(error => {
                     console.error('Error:', error);
                     const Toast = Swal.mixin({
-                        toast: true, 
-                        position: 'top-end', 
-                        showConfirmButton: false, 
-                        timer: 3000, 
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
                         timerProgressBar: true
                     });
-                    Toast.fire({ 
-                        icon: 'error', 
-                        title: 'Error al procesar Me Gusta' 
+                    Toast.fire({
+                        icon: 'error',
+                        title: 'Error al procesar Me Gusta'
                     });
                 });
                 return;
@@ -494,19 +630,122 @@
         initializeAccountButtonListener();
         initializeAvatarUpload();
         initializeSongMenuListeners();
-        
-        const userMenuToggle = document.getElementById('user-menu-toggle');
-        const userMenu = document.getElementById('user-menu');
+        initializeCreatePlaylistButton();
+    });
 
-        if (userMenuToggle) {
-            userMenuToggle.addEventListener('click', function(event) {
-                event.stopPropagation();
-                userMenu.classList.toggle('show');
+    function initializeCreatePlaylistButton() {
+        const createPlaylistBtn = document.getElementById('create-playlist-btn');
+        if (createPlaylistBtn) {
+            // Remover event listeners previos para evitar duplicados
+            createPlaylistBtn.replaceWith(createPlaylistBtn.cloneNode(true));
+            const newBtn = document.getElementById('create-playlist-btn');
+            
+            newBtn.addEventListener('click', function() {
+                Swal.fire({
+                    title: 'Crear Nueva Playlist',
+                    html: `
+                        <div style="text-align: left;">
+                            <label for="playlist-name" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Nombre de la playlist:</label>
+                            <input type="text" id="playlist-name" class="swal2-input" placeholder="Ingresa el nombre..." style="margin-bottom: 1rem;">
+                            
+                            <label for="playlist-cover" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Imagen de portada (opcional):</label>
+                            <input type="file" id="playlist-cover" accept="image/*" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                            <small style="color: #666; display: block; margin-top: 0.5rem;">Si no seleccionas una imagen, se usará la portada por defecto.</small>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Crear',
+                    cancelButtonText: 'Cancelar',
+                    preConfirm: () => {
+                        const name = document.getElementById('playlist-name').value;
+                        const coverFile = document.getElementById('playlist-cover').files[0];
+                        
+                        if (!name || name.trim() === '') {
+                            Swal.showValidationMessage('Debes ingresar un nombre para la playlist');
+                            return false;
+                        }
+                        
+                        return { name: name.trim(), coverFile: coverFile };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const { name, coverFile } = result.value;
+                        
+                        // Obtener el token CSRF de diferentes formas
+                        let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                        if (!csrfToken) {
+                            csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                        }
+                        if (!csrfToken) {
+                            const cookies = document.cookie.split(';');
+                            for (let cookie of cookies) {
+                                const [cookieName, value] = cookie.trim().split('=');
+                                if (cookieName === 'csrftoken') {
+                                    csrfToken = value;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Mostrar loading si hay imagen
+                        if (coverFile) {
+                            Swal.fire({
+                                title: 'Creando playlist...',
+                                text: 'Subiendo imagen, por favor espera.',
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                didOpen: () => Swal.showLoading()
+                            });
+                        }
+                        
+                        const formData = new FormData();
+                        formData.append('csrfmiddlewaretoken', csrfToken);
+                        formData.append('name', name);
+                        if (coverFile) {
+                            formData.append('cover_image', coverFile);
+                        }
+                        
+                        fetch('{% url "create_playlist" %}', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                const Toast = Swal.mixin({
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true
+                                });
+                                Toast.fire({
+                                    icon: 'success',
+                                    title: `Playlist "${name}" creada exitosamente`
+                                });
+                                
+                                // Recargar la lista de playlists via HTMX
+                                htmx.ajax('GET', '{% url "playlist_list" %}', {
+                                    target: '.main-content',
+                                    swap: 'innerHTML'
+                                });
+                                
+                            } else {
+                                throw new Error('Error al crear la playlist');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'No se pudo crear la playlist'
+                            });
+                        });
+                    }
+                });
             });
         }
-
-
-    });
+    }
 
     document.body.addEventListener('htmx:beforeRequest', function(event) {
         if (event.detail.elt.id !== 'scan-button' && event.detail.elt.id !== 'quick-scan-button' && event.detail.elt.id !== 'cover-scan-button') {
@@ -528,15 +767,31 @@
         }
     });
 
-    document.body.addEventListener('htmx:afterOnLoad', function() {
+    document.body.addEventListener('htmx:afterSwap', function() {
         updateUserMenuVisibility();
         initializeAccountButtonListener();
         initializeAvatarUpload();
-        
+        initializeSongMenuListeners();
+        initializeCreatePlaylistButton(); // Añadir esta línea
+
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');
         if (audioPlayer && songList && !audioPlayer.paused) {
             songList.classList.add('playback-active');
+        }
+    });
+
+    document.body.addEventListener('htmx:afterOnLoad', function() {
+        updateUserMenuVisibility();
+        initializeAccountButtonListener();
+        initializeAvatarUpload();
+        initializeSongMenuListeners();
+        initializeCreatePlaylistButton(); // Añadir esta línea también aquí
+
+        const audioPlayer = document.getElementById('main-audio-player');
+        const songList = document.getElementById('song-list');
+        if (audioPlayer && songList && !audioPlayer.paused) {
+            songList.classList.add('playbook-active');
         }
     });
 

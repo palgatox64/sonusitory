@@ -1,0 +1,44 @@
+{% extends request.htmx|yesno:"_base_empty.html,base.html" %}
+{% load static %}
+
+{% block content %}
+    {% csrf_token %}
+    <h1>Tus Playlists</h1>
+    
+    <div class="action-bar">
+        <p>
+            <button 
+                id="create-playlist-btn" 
+                class="btn">
+                Crear Nueva Playlist
+            </button>
+            <a href="{% url 'folder_browser' %}" 
+               hx-get="{% url 'folder_browser' %}" 
+               hx-target=".main-content" 
+               hx-push-url="true" 
+               class="btn">
+                Volver a la Biblioteca
+            </a>
+        </p>
+    </div>
+
+    {% if playlists %}
+        <div class="playlist-list">
+            {% for playlist in playlists %}
+                <a href="{% url 'playlist_detail' playlist_id=playlist.id %}"
+                   hx-get="{% url 'playlist_detail' playlist_id=playlist.id %}"
+                   hx-target=".main-content"
+                   hx-push-url="true">
+                    <img src="{% if playlist.cover_image_url %}{{ playlist.cover_image_url }}{% else %}{% static 'images/default_cover.png' %}{% endif %}" 
+                         alt="{{ playlist.name }}">
+                    <div class="playlist-info">
+                        <h3 class="playlist-name">{{ playlist.name }}</h3>
+                        <p class="playlist-count">{{ playlist.songs.count }} canciones</p>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No tienes playlists aún. ¡Crea tu primera playlist!</p>
+    {% endif %}
+{% endblock %}
