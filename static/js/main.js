@@ -28,7 +28,6 @@ function initializeAvatarUpload() {
     changeAvatarButton.replaceWith(changeAvatarButton.cloneNode(true));
     const newChangeAvatarButton = document.getElementById('change-avatar-button');
 
-    // Clonar primero el input y usar SIEMPRE la nueva referencia
     avatarInput.replaceWith(avatarInput.cloneNode(true));
     const newAvatarInput = document.getElementById('avatar-input');
 
@@ -562,8 +561,183 @@ document.body.addEventListener('htmx:afterRequest', function(event) {
     initializeLikeButtons();
     initializeAvatarUpload();
     updateUserMenuVisibility();
+    try {
+        const srcEl = event?.detail?.elt;
+        if (!srcEl || !srcEl.id) return;
+        const scanButtons = new Set(['scan-button', 'quick-scan-button', 'cover-scan-button']);
+        if (!scanButtons.has(srcEl.id)) return;
+
+        const xhr = event?.detail?.xhr;
+        if (!xhr) return;
+        if (typeof xhr.status === 'number' && xhr.status >= 400) {
+            Swal.fire({
+                icon: 'error',
+                title: 'No se pudo iniciar el escaneo',
+                text: 'Inténtalo nuevamente en unos segundos.'
+            });
+            return;
+        }
+        let data = null;
+        try { data = JSON.parse(xhr.responseText); } catch (_) { /* noop */ }
+        const taskId = data?.task_id;
+        if (!taskId) return;
+
+        const scanLabels = {
+            'scan-button': 'Escaneo completo de librería',
+            'quick-scan-button': 'Búsqueda rápida de nuevas canciones',
+            'cover-scan-button': 'Búsqueda de portadas'
+        };
+
+        showScanProgress(taskId, scanLabels[srcEl.id] || 'Proceso en ejecución');
+    } catch (e) {
+        console.error('Error gestionando progreso de escaneo:', e);
+    }
 });
 
 window.showQueue = function() {
     console.log('Cola actual:', songQueue.map(song => song.name));
 };
+
+function showScanProgress(taskId, title) {
+    Swal.fire({
+        title: title,
+        html: renderScanHtml({ status: 'PENDING', info: { step: 'queued' } }),
+        allowOutsideClick: false,
+        showConfirmButton: false,
+        didOpen: () => {
+            pollTaskUntilDone(taskId, title);
+        }
+    });
+}
+
+function renderScanHtml(payload) {
+    const status = payload?.status || 'PENDING';
+    const info = payload?.info || {};
+    const lines = [];
+
+    if (status === 'PENDING') {
+        lines.push('En cola para iniciar...');
+    } else if (status === 'STARTED' || status === 'PROGRESS') {
+        const step = (info.step || '').toString();
+        const current = info.current;
+        const total = info.total;
+
+        lines.push(formatStep(step, current, total));
+        if (typeof current === 'number' && typeof total === 'number' && total > 0) {
+            const pct = Math.max(0, Math.min(100, Math.round((current / total) * 100)));
+            lines.push(`<div style="margin:8px auto 0; height:8px; width:80%; background:#333; border-radius:4px; overflow:hidden;">
+                <div style="height:100%; width:${pct}%; background:#bb86fc;"></div>
+            </div>`);
+        } else {
+            lines.push('<div class="swal2-timer-progress-bar" style="display:block; width:80%; margin:8px auto 0; opacity:1; background:#333; height:4px;"></div>');
+        }
+    } else if (status === 'SUCCESS') {
+        const msg = typeof info === 'string' ? info : 'Proceso completado correctamente.';
+
+        lines.push(`<span style="color:#000;">${escapeHtml(msg)}</span>`);
+    } else if (status === 'FAILURE') {
+        const err = info?.exc_message || info?.message || 'Ocurrió un error en el proceso.';
+        lines.push(`<span style="color:#ff6b6b;">${escapeHtml(err)}</span>`);
+    } else {
+        lines.push(`Estado: ${escapeHtml(status)}`);
+    }
+
+    const showSpinner = status === 'PENDING' || status === 'STARTED' || status === 'PROGRESS';
+    const spinnerHtml = showSpinner
+        ? '<span class="spinner" style="width:14px; height:14px; border:2px solid #bbb; border-top-color:#bb86fc; border-radius:50%; display:inline-block; animation:spin 0.8s linear infinite;"></span>'
+        : '';
+
+    return `
+        <div style="text-align:center;">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:12px;">
+                ${spinnerHtml}
+                <div class="scan-lines" style="max-width: 520px;">${lines.join('<br>')}</div>
+            </div>
+        </div>
+        <style>
+            @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg);} }
+        </style>
+    `;
+}
+
+function formatStep(step, current, total) {
+    const map = {
+        searching_audio_files: 'Buscando archivos de audio en tu Drive...',
+        processing_audio_files: (c) => `Procesando archivos de audio${typeof c === 'number' ? ` (procesados: ${c})` : ''}...`,
+        getting_existing_files: 'Consultando canciones existentes...',
+        searching_new_files: 'Buscando nuevas canciones...',
+        getting_existing_albums: 'Buscando álbumes sin portada...',
+        covers: (c, t) => `Buscando portadas${typeof c === 'number' && typeof t === 'number' ? ` (${c} de ${t})` : ''}...`,
+        queued: 'En cola...'
+    };
+
+    if (typeof map[step] === 'function') {
+        return map[step](current, total);
+    }
+
+    return step ? `Procesando: ${step} ${typeof current === 'number' && typeof total === 'number' ? `(${current}/${total})` : ''}` : 'Procesando...';
+}
+
+function pollTaskUntilDone(taskId, title) {
+    let stopped = false;
+    const controller = new AbortController();
+
+    const tick = () => {
+        if (stopped) return;
+        fetch(`/task-status/${taskId}/`, { signal: controller.signal })
+            .then(r => r.json())
+            .then(data => {
+                const status = data?.status;
+                const info = data?.info;
+
+                if (status === 'SUCCESS') {
+                    Swal.update({
+                        title: title,
+                        html: renderScanHtml({ status, info }),
+                        showConfirmButton: true,
+                        confirmButtonText: 'Ir a inicio',
+                        confirmButtonColor: '#bb86fc',
+                        showCancelButton: false,
+                        allowOutsideClick: true,
+                        icon: 'success'
+                    });
+                    stopped = true;
+                    Swal.getConfirmButton()?.addEventListener('click', () => {
+                        window.location.href = 'http://localhost:8000/';
+                    });
+                } else if (status === 'FAILURE') {
+                    Swal.update({
+                        title: 'Error en el proceso',
+                        html: renderScanHtml({ status, info }),
+                        showConfirmButton: true,
+                        confirmButtonText: 'Cerrar',
+                        confirmButtonColor: '#d33',
+                        icon: 'error'
+                    });
+                    stopped = true;
+                } else {
+                    Swal.update({
+                        title: title,
+                        html: renderScanHtml({ status: status || 'PROGRESS', info })
+                    });
+                    setTimeout(tick, 2000);
+                }
+            })
+            .catch(err => {
+                console.error('Error consultando estado de tarea:', err);
+                if (!stopped) setTimeout(tick, 2500);
+            });
+    };
+
+    tick();
+}
+
+function escapeHtml(text) {
+    if (typeof text !== 'string') return text;
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
