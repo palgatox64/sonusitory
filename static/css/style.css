@@ -803,7 +803,7 @@ login-providers {
     
     .breadcrumb {
         padding: 8px;
-        font-size: 0.9rem;
+        font-size: 1.1rem;
     }
     
     .breadcrumb-separator {
@@ -813,7 +813,7 @@ login-providers {
 
 .breadcrumb {
     padding: 8px 0;
-    font-size: 0.9rem;
+    font-size: 1.2rem;
     margin-bottom: 1.5rem; /* Agregar espacio entre breadcrumb y action-bar */
 }
 
@@ -834,7 +834,7 @@ login-providers {
 @media (max-width: 767px) {
     .breadcrumb {
         padding: 8px 0;
-        font-size: 0.9rem;
+        font-size: 1.1rem;
         margin-bottom: 1rem; /* Menos espacio en móviles */
     }
     
