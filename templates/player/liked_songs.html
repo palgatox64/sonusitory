@@ -17,17 +17,14 @@
 
     <div class="action-bar">
         <p>
-            <a href="{% url 'artist_list' %}" hx-get="{% url 'artist_list' %}" hx-target=".main-content" hx-push-url="true" class="btn">Volver a la Biblioteca</a>
+            <a href="{% url 'folder_browser' %}" hx-get="{% url 'folder_browser' %}" hx-target=".main-content" hx-push-url="true" class="btn">Volver a la Biblioteca</a>
         </p>
     </div>
 
     {% if songs %}
         <ul id="song-list">
             {% for song in songs %}
-                <li
-                    data-song-id="{{ song.google_file_id }}"
-                    data-song-name="{{ song.title }}">
-
+                <li data-song-id="{{ song.google_file_id }}" data-song-name="{{ song.title }}">
                     {{ song.title }}
                     {% if song.artist %}
                         <span style="color: #b3b3b3; margin-left: 10px;">por {{ song.artist.name }}</span>

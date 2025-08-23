@@ -1,0 +1,132 @@
+{% extends request.htmx|yesno:"_base_empty.html,base.html" %}
+{% load static %}
+
+{% block content %}
+    <div class="folder-browser">
+
+        <div class="breadcrumb">
+            <a href="{% url 'folder_browser' %}" 
+               hx-get="{% url 'folder_browser' %}" 
+               hx-target=".main-content" 
+               hx-push-url="true">
+                Biblioteca
+            </a>
+            {% for crumb in breadcrumb %}
+                <span class="breadcrumb-separator"> > </span>
+                <a href="{% url 'folder_browser' folder_id=crumb.id %}" 
+                   hx-get="{% url 'folder_browser' folder_id=crumb.id %}" 
+                   hx-target=".main-content" 
+                   hx-push-url="true">
+                    {{ crumb.name }}
+                </a>
+            {% endfor %}
+        </div>
+
+        {% if has_songs and album and songs %}
+            <div class="album-header">
+                <div class="album-cover-container">
+                    {% if album.cover_image_id %}
+                        <div class="cover-placeholder"></div>
+                        <img 
+                            src="{% url 'album_cover' album_id=album.id %}" 
+                            alt="Cover for {{ album.name }}" 
+                            class="album-cover"
+                            onload="this.style.display='block'; this.previousElementSibling.style.display='none';">
+                    {% else %}
+                        <div class="cover-placeholder"></div>
+                    {% endif %}
+                </div>
+                <div class="album-info">
+                    <h1>{{ album.name }}</h1>
+                    {% if album.artist %}
+                        <h2>por {{ album.artist.name }}</h2>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="action-bar">
+            <p>
+                <a href="{% url 'select_folder' %}" 
+                   hx-get="{% url 'select_folder' %}" 
+                   hx-target=".main-content" 
+                   hx-push-url="true" 
+                   class="btn" 
+                   id="change-folder-btn">
+                    Analizar carpeta de música
+                </a>
+                <a href="{% url 'liked_songs' %}" 
+                   hx-get="{% url 'liked_songs' %}" 
+                   hx-target=".main-content" 
+                   hx-push-url="true" 
+                   class="btn" 
+                   id="liked-songs-btn">
+                    Tus me gusta
+                </a>
+            </p>
+        </div>
+
+        {% if subfolders %}
+            <div class="folder-list">
+                {% if not has_songs %}
+                    <h2>Carpetas</h2>
+                {% endif %}
+                <div class="artist-list">
+                    {% for folder in subfolders %}
+                        <a href="{% url 'folder_browser' folder_id=folder.id %}" 
+                           hx-get="{% url 'folder_browser' folder_id=folder.id %}" 
+                           hx-target=".main-content" 
+                           hx-push-url="true">
+                            📁 {{ folder.name }}
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if has_songs and album and songs %}
+            <div class="songs-section">
+                <ul id="song-list">
+                    {% for song in songs %}
+                        <li data-song-id="{{ song.google_file_id }}" 
+                            data-song-name="{{ song.title }}">
+
+                            {% if song.track_number %}
+                                <span style="display: inline-block; width: 30px; text-align: right; margin-right: 10px;">
+                                    {{ song.track_number }}.
+                                </span>
+                            {% endif %}
+                            {{ song.title }}
+                        
+                            <div class="song-menu-container">
+                                <button class="like-btn {% if song.id in liked_songs_ids %}liked{% endif %}" 
+                                        data-song-id="{{ song.google_file_id }}"
+                                        title="Me gusta">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                                <button class="song-menu-btn" title="Más opciones">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="song-menu-dropdown">
+                                    <button class="queue-add-btn" 
+                                            title="Añadir a la cola"
+                                            data-song-id="{{ song.google_file_id }}"
+                                            data-song-name="{{ song.title }}">
+                                        <img src="{% static 'images/queue_icon.png' %}" 
+                                             alt="Añadir a la cola" 
+                                             style="width: 16px; height: 16px;">
+                                        <span>Añadir a la cola</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        {% if not subfolders and not has_songs %}
+            <p>Esta carpeta está vacía o no contiene música.</p>
+        {% endif %}
+    </div>
+{% endblock %}

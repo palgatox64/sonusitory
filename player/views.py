@@ -130,17 +130,14 @@ def select_folder(request):
         
     service = build('drive', 'v3', credentials=creds)
     
-    # Buscar carpetas reales en la raíz
     folder_query = "mimeType='application/vnd.google-apps.folder' and 'root' in parents and trashed=false"
     folder_results = service.files().list(q=folder_query, fields="files(id, name)").execute()
     real_folders = folder_results.get('files', [])
     
-    # Buscar shortcuts (accesos directos) en la raíz
     shortcut_query = "mimeType='application/vnd.google-apps.shortcut' and 'root' in parents and trashed=false"
     shortcut_results = service.files().list(q=shortcut_query, fields="files(id, name, shortcutDetails)").execute()
     shortcuts = shortcut_results.get('files', [])
     
-    # Procesar shortcuts para obtener información de las carpetas de destino
     processed_folders = []
     for folder in real_folders:
         processed_folders.append({
@@ -151,15 +148,14 @@ def select_folder(request):
     
     for shortcut in shortcuts:
         try:
-            # Obtener información de la carpeta de destino del shortcut
+            
             target_id = shortcut['shortcutDetails']['targetId']
             target_info = service.files().get(fileId=target_id, fields="id, name, mimeType").execute()
             
-            # Solo incluir si el destino es una carpeta
             if target_info.get('mimeType') == 'application/vnd.google-apps.folder':
                 processed_folders.append({
-                    'id': target_id,  # Usar el ID de la carpeta de destino
-                    'name': shortcut['name'], # Nombre sin emoji
+                    'id': target_id,
+                    'name': shortcut['name'],
                     'type': 'shortcut'
                 })
         except Exception as e:
@@ -196,43 +192,116 @@ def start_cover_scan_task(request):
 
 @login_required
 def artist_list(request):
-    try:
-        profile = UserProfile.objects.get(user=request.user)
-        if not profile.google_drive_root_id:
-            return redirect('select_folder')
-    except UserProfile.DoesNotExist:
-        return redirect('select_folder')
-    artists = Artist.objects.filter(user=request.user).order_by('name')
-    
-    base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
 
-    context = {'artists': artists, 'base_template': base_template}
-    return render(request, 'player/artist_list.html', context)
+    return redirect('folder_browser')
+
+@login_required
+def folder_browser(request, folder_id=None):
+
+    try:
+        creds_model = GoogleCredential.objects.get(user=request.user)
+        creds = Credentials.from_authorized_user_info(json.loads(creds_model.token_json))
+        profile = UserProfile.objects.get(user=request.user)
+        root_folder_id = profile.google_drive_root_id
+        
+        if not root_folder_id:
+            return redirect('select_folder')
+            
+    except (GoogleCredential.DoesNotExist, UserProfile.DoesNotExist):
+        return redirect('google_login')
+    
+    service = build('drive', 'v3', credentials=creds)
+    
+    current_folder_id = folder_id or root_folder_id
+    
+    try:
+        current_folder = service.files().get(fileId=current_folder_id, fields='id, name, parents').execute()
+    except Exception as e:
+        return redirect('folder_browser')
+    
+    breadcrumb = []
+    temp_folder_id = current_folder_id
+    
+    while temp_folder_id and temp_folder_id != root_folder_id:
+        try:
+            folder_info = service.files().get(fileId=temp_folder_id, fields='id, name, parents').execute()
+            breadcrumb.insert(0, {
+                'id': folder_info['id'],
+                'name': folder_info['name']
+            })
+            parents = folder_info.get('parents', [])
+            temp_folder_id = parents[0] if parents else None
+        except:
+            break
+    
+    folder_query = f"mimeType='application/vnd.google-apps.folder' and '{current_folder_id}' in parents and trashed=false"
+    folder_results = service.files().list(
+        q=folder_query, 
+        fields="files(id, name)",
+        orderBy="name"
+    ).execute()
+    subfolders = folder_results.get('files', [])
+    
+    songs_query = f"(mimeType='audio/mpeg' or mimeType='audio/flac' or mimeType='audio/wav') and '{current_folder_id}' in parents and trashed=false"
+    songs_results = service.files().list(
+        q=songs_query, 
+        fields="files(id, name)",
+        pageSize=5
+    ).execute()
+    has_songs = len(songs_results.get('files', [])) > 0
+    
+    album = None
+    songs = []
+    liked_songs_ids = set()
+    if has_songs:
+        folder_path = []
+        temp_folder_id = current_folder_id
+        
+        while temp_folder_id and temp_folder_id != root_folder_id:
+            try:
+                folder_info = service.files().get(fileId=temp_folder_id, fields='id, name, parents').execute()
+                folder_path.insert(0, folder_info['name'])
+                parents = folder_info.get('parents', [])
+                temp_folder_id = parents[0] if parents else None
+            except:
+                break
+        
+        if len(folder_path) >= 2:
+            artist_name = folder_path[-2]
+            album_name = folder_path[-1]
+            
+            try:
+                artist = Artist.objects.get(name=artist_name, user=request.user)
+                album = Album.objects.get(name=album_name, artist=artist, user=request.user)
+                songs = Song.objects.filter(album=album, user=request.user).order_by('track_number', 'name')
+                
+
+                from .models import LikedSong
+                liked_songs_ids = set(LikedSong.objects.filter(
+                    user=request.user, 
+                    song__in=songs
+                ).values_list('song_id', flat=True))
+                
+            except (Artist.DoesNotExist, Album.DoesNotExist):
+                pass
+    
+    context = {
+        'current_folder': current_folder,
+        'subfolders': subfolders,
+        'breadcrumb': breadcrumb,
+        'has_songs': has_songs,
+        'album': album,
+        'songs': songs,
+        'liked_songs_ids': liked_songs_ids,
+        'is_root': current_folder_id == root_folder_id,
+    }
+    
+    return render(request, 'player/folder_browser.html', context)
 
 @login_required
 def artist_detail(request, artist_id):
-    artist = Artist.objects.get(id=artist_id, user=request.user)
-    albums = Album.objects.filter(artist=artist, user=request.user).order_by('name')
-    
-    base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
-    
-    context = {
-        'artist': artist,
-        'albums': albums,
-        'base_template': base_template
-    }
-    return render(request, 'player/artist_detail.html', context)
 
-@login_required
-def album_detail(request, album_id):
-    album = Album.objects.get(id=album_id, user=request.user)
-    songs = Song.objects.filter(album=album, user=request.user).order_by('track_number', 'name')
-    
-    base_template = "base.html" if not request.htmx or request.htmx.history_restore_request else "_base_empty.html"
-    
-    context = {'album': album, 'songs': songs, 'base_template': base_template}
-    return render(request, 'player/album_detail.html', context)
-
+    return redirect('folder_browser')
 
 @login_required
 def album_cover(request, album_id):
@@ -310,7 +379,7 @@ def liked_songs(request):
 
 @login_required
 def start_scan_task(request):
-    task = scan_user_library.delay(request.user.id, scan_mode='full') # <-- MODIFICADO
+    task = scan_user_library.delay(request.user.id, scan_mode='full')
     return JsonResponse({'task_id': task.id})
 
 @login_required
@@ -329,7 +398,6 @@ def toggle_like_song(request, song_id):
         try:
             song = Song.objects.get(google_file_id=song_id, user=request.user)
             
-            # Verificar si es una acción de "deshacer"
             is_undo = request.POST.get('undo') == 'true'
             original_date = request.POST.get('original_date')
             
@@ -339,20 +407,16 @@ def toggle_like_song(request, song_id):
             )
             
             if not created:
-                # Si ya existía, guardamos la fecha original antes de eliminarlo
                 original_created_at = liked_song.created_at
                 liked_song.delete()
                 liked = False
                 
-                # Devolver la fecha original para posible "deshacer"
                 return JsonResponse({
                     'liked': liked,
                     'original_date': original_created_at.isoformat()
                 })
             else:
-                # Si se creó nuevo
                 if is_undo and original_date:
-                    # Si es un "deshacer", restaurar la fecha original
                     from datetime import datetime
                     liked_song.created_at = datetime.fromisoformat(original_date.replace('Z', '+00:00'))
                     liked_song.original_created_at = liked_song.created_at

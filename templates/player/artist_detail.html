@@ -5,19 +5,19 @@
 
     <div class="action-bar">
         <p>
-            <a href="{% url 'artist_list' %}" hx-get="{% url 'artist_list' %}" hx-target=".main-content" hx-push-url="true" class="btn">Volver a la Biblioteca</a>
+            <a href="{% url 'folder_browser' %}" hx-get="{% url 'folder_browser' %}" hx-target=".main-content" hx-push-url="true" class="btn">Volver a la Biblioteca</a>
         </p>
     </div>
 
     {% if albums %}
         <div class="album-list">
             {% for album in albums %}
-                <a href="{% url 'album_detail' album_id=album.id %}" hx-get="{% url 'album_detail' album_id=album.id %}" hx-target=".main-content" hx-push-url="true">
+                <a href="{% url 'folder_browser' %}" hx-get="{% url 'folder_browser' %}" hx-target=".main-content" hx-push-url="true">
                     📁 {{ album.name }}
                 </a>
             {% endfor %}
         </div>
     {% else %}
-        <p>No se encontraron álbumes para este artista.</p>
+        <p>No se encontraron álbumes para este artista. Usa el navegador de carpetas para explorar tu música.</p>
     {% endif %}
 {% endblock %}

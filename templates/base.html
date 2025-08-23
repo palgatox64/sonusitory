@@ -595,7 +595,7 @@
                         Swal.fire({
                             title: '¡Éxito!', text: data.info, icon: 'success', confirmButtonText: 'Ir a mi librería'
                         }).then(() => {
-                            window.location.href = "{% url 'artist_list' %}";
+                            window.location.href = "{% url 'folder_browser' %}";
                         });
                     } else if (data.status === 'FAILURE') {
                         clearInterval(interval);
