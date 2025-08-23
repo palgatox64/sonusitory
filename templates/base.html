@@ -340,9 +340,10 @@
                 event.stopPropagation();
 
                 const parentLi = menuButton.closest('li');
-                const dropdown = menuButton.nextElementSibling;
+                const dropdown = menuButton.nextElementSibling; // Debe ser .song-menu-dropdown
                 const isAlreadyOpen = parentLi.classList.contains('menu-open');
 
+                // Cerrar todos los menús abiertos
                 document.querySelectorAll('#song-list li.menu-open').forEach(openLi => {
                     openLi.classList.remove('menu-open');
                     const menuDropdown = openLi.querySelector('.song-menu-dropdown');
@@ -351,23 +352,23 @@
                     if (menuBtn) menuBtn.classList.remove('is-visible');
                 });
 
-                if (!isAlreadyOpen) {
+                if (!isAlreadyOpen && dropdown) {
                     parentLi.classList.add('menu-open');
                     dropdown.classList.add('show');
                     menuButton.classList.add('is-visible');
-                    
-                    // Verificar si el menú se sale de la pantalla (mejorado)
+
+                    // Verificar posición y ajustar si es necesario
                     setTimeout(() => {
                         const rect = dropdown.getBoundingClientRect();
                         const windowHeight = window.innerHeight;
-                        const playerHeight = 120; // Altura aproximada del reproductor
-                        
-                        if (rect.bottom > windowHeight - playerHeight - 20) {
+                        const playerHeight = 120;
+
+                        if (rect.bottom > windowHeight - playerHeight - 10) {
                             dropdown.classList.add('show-above');
                         } else {
                             dropdown.classList.remove('show-above');
                         }
-                    }, 10); // Pequeño delay para que el dropdown se renderice primero
+                    }, 10);
                 }
                 return;
             }
@@ -576,26 +577,31 @@
         });
     }
 
-    window.addEventListener('click', function(event) {
-
-        if (!event.target.closest('.song-menu-container')) {
-            document.querySelectorAll('#song-list li.menu-open').forEach(openLi => {
-                openLi.classList.remove('menu-open');
-                const menuDropdown = openLi.querySelector('.song-menu-dropdown');
-                const menuBtn = openLi.querySelector('.song-menu-btn');
-                if (menuDropdown) menuDropdown.classList.remove('show');
-                if (menuBtn) menuBtn.classList.remove('is-visible');
+    function initializeUserMenuToggle() {
+        const userMenuToggle = document.getElementById('user-menu-toggle');
+        const userMenu = document.getElementById('user-menu');
+        
+        if (userMenuToggle && userMenu) {
+            // Remover event listeners previos para evitar duplicados
+            userMenuToggle.replaceWith(userMenuToggle.cloneNode(true));
+            const newToggle = document.getElementById('user-menu-toggle');
+            
+            newToggle.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                
+                // Toggle la visibilidad del menú
+                userMenu.classList.toggle('show');
+            });
+            
+            // Cerrar el menú cuando se hace clic fuera de él
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.dropdown')) {
+                    userMenu.classList.remove('show');
+                }
             });
         }
-
-        const userMenu = document.getElementById('user-menu');
-        if (userMenu && !event.target.closest('#user-menu-toggle')) {
-            if (userMenu.classList.contains('show')) {
-                userMenu.classList.remove('show');
-            }
-        }
-    });
-
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
         const audioPlayer = document.getElementById('main-audio-player');
@@ -631,6 +637,7 @@
         initializeAvatarUpload();
         initializeSongMenuListeners();
         initializeCreatePlaylistButton();
+        initializeUserMenuToggle();
     });
 
     function initializeCreatePlaylistButton() {
@@ -772,7 +779,8 @@
         initializeAccountButtonListener();
         initializeAvatarUpload();
         initializeSongMenuListeners();
-        initializeCreatePlaylistButton(); // Añadir esta línea
+        initializeCreatePlaylistButton();
+        initializeUserMenuToggle();
 
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');
@@ -786,7 +794,8 @@
         initializeAccountButtonListener();
         initializeAvatarUpload();
         initializeSongMenuListeners();
-        initializeCreatePlaylistButton(); // Añadir esta línea también aquí
+        initializeCreatePlaylistButton();
+        initializeUserMenuToggle();
 
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');

@@ -309,15 +309,8 @@ login-providers {
 .dropdown-toggle-btn {
     background: none;
     border: none;
-    padding: 0;
     cursor: pointer;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-}
-
-.dropdown-toggle-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0;
 }
 
 .user-avatar {
@@ -327,80 +320,119 @@ login-providers {
     object-fit: cover;
 }
 
-
 .dropdown-menu {
+    display: none;
     position: absolute;
+    top: 50px;
     right: 0;
-    background-color: #282828;
-    min-width: 220px;
-    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-    z-index: 100;
-    border-radius: 8px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-10px);
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    background-color: #181818;
+    min-width: 180px;
+    box-shadow: 0px 8px 20px 0px rgba(0,0,0,0.6);
+    z-index: 9999;
+    border-radius: 15px;
+    border: 1px solid #282828;
+    padding: 12px;
+    overflow: hidden;
 }
-
 
 .dropdown-menu.show {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+    display: block;
 }
 
-.dropdown-menu .btn {
+.dropdown-menu a {
+    display: inline-block;
     width: 100%;
-    margin: 0;
-    padding: 15px 0;
-    justify-content: center;
-    text-align: center;
+    padding: 12px 20px;
+    border: unset;
+    border-radius: 15px;
+    color: #121212;
+    z-index: 1;
+    background: #ffffff;
+    position: relative;
     font-weight: 600;
-}
-
-.cover-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #282828;
-    border-radius: 5px;
-    animation: pulse 1.5s infinite;
-    width: 150px;
-    height: 150px;
-    position: absolute;
-    color: #b3b3b3;
     font-size: 14px;
+    box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27);
+    transition: all 250ms;
+    overflow: hidden;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    margin-bottom: 8px;
+    box-sizing: border-box;
 }
 
-.cover-placeholder::after {
+.dropdown-menu a::before {
     content: "";
-    font-size: 40px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    border-radius: 15px;
+    background-color: #bb86fc;
+    z-index: -1;
+    box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27);
+    transition: all 250ms;
 }
 
-@keyframes pulse {
-    0% {
-        background-color: #282828;
-    }
-    50% {
-        background-color: #404040;
-    }
-    100% {
-        background-color: #282828;
-    }
+.dropdown-menu a:hover {
+    color: #e8e8e8;
+    text-decoration: none;
 }
 
-.btn.btn-danger::before {
-    background-color: #d33;
+.dropdown-menu a:hover::before {
+    width: 100%;
+}
+
+.dropdown-menu form {
+    margin: 0;
+}
+
+.dropdown-menu button {
+    width: 100%;
+    padding: 12px 20px;
+    border: unset;
+    border-radius: 15px;
+    color: #121212;
+    z-index: 1;
+    background: #ffffff;
+    position: relative;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27);
+    transition: all 250ms;
+    overflow: hidden;
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.dropdown-menu button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    border-radius: 15px;
+    background-color: #dc3545;
+    z-index: -1;
+    box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27);
+    transition: all 250ms;
+}
+
+.dropdown-menu button:hover {
+    color: #e8e8e8;
+}
+
+.dropdown-menu button:hover::before {
+    width: 100%;
 }
 
 
 #song-list li {
-    position: relative; 
+    position: relative;
+    overflow: visible;
 }
 
 .queue-add-btn {
@@ -507,28 +539,29 @@ login-providers {
 }
 
 .song-menu-dropdown {
-    display: none;
-    position: absolute;
+    top: 35px;
     right: 0;
-    top: 40px;
+    position: absolute;
     background-color: #282828;
     min-width: 180px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
-    z-index: 100;
+    z-index: 9999;
     border-radius: 4px;
-    overflow: hidden;
     border: 1px solid #404040;
     white-space: nowrap;
+    display: none;
+    /* Añadir estas propiedades para evitar que el contenido se desborde */
+    overflow: hidden;
+    padding: 0; /* Asegurar que no hay padding extra */
 }
 
 .song-menu-dropdown.show {
     display: block;
 }
 
-/* Añadir clase para cuando el menú debe aparecer hacia arriba */
 .song-menu-dropdown.show-above {
     top: auto;
-    bottom: 40px;
+    bottom: 35px;
 }
 
 .song-menu-dropdown .queue-add-btn,
@@ -547,14 +580,16 @@ login-providers {
     font-size: 0.85rem;
     font-weight: 500;
     transition: background-color 0.2s ease;
-    border-bottom: 1px solid #383838;
     position: relative;
     box-sizing: border-box;
-    height: 44px;
+    /* Añadir estas propiedades para mantener los botones en su lugar */
+    flex-shrink: 0;
+    min-height: 44px; /* Altura mínima para touch targets */
 }
 
-.song-menu-dropdown .add-to-playlist-btn {
-    border-bottom: none;
+/* Aplicar el borde a todos menos al último */
+.song-menu-dropdown button:not(:last-child) {
+    border-bottom: 1px solid #383838;
 }
 
 .song-menu-dropdown .queue-add-btn:hover,
@@ -576,41 +611,32 @@ login-providers {
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.2;
+    white-space: nowrap; /* Evitar que el texto se rompa en múltiples líneas */
+}
+
+/* Asegurar que el contenedor del menú tenga la posición correcta */
+.song-menu-container {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
 }
 
 #song-list li.menu-open {
     z-index: 101;
     position: relative;
+    /* Asegurar que el overflow esté visible para el menú */
+    overflow: visible;
 }
 
-.login-providers .btn {
-    width: 100%;
-    margin: 0;
-}
-
-.folder-browser {
-    width: 100%;
-}
-
-.breadcrumb {
-    margin-bottom: 20px;
-    padding: 10px;
-    background-color: #2a2a2a;
-    border-radius: 5px;
-}
-
-.breadcrumb a {
-    color: #b3b3b3;
-    text-decoration: none;
-}
-
-.breadcrumb a:hover {
-    color: #bb86fc;
-}
-
-.breadcrumb-separator {
-    color: #666;
-    margin: 0 8px;
+/* Añadir estilos específicos para mejorar la contención del menú */
+#song-list li {
+    position: relative;
+    overflow: visible; /* Cambiar de hidden a visible para permitir que el menú sea visible */
 }
 
 .album-header {
@@ -782,5 +808,73 @@ login-providers {
     
     .breadcrumb-separator {
         margin: 0 4px;
+    }
+}
+
+.breadcrumb {
+    padding: 8px 0;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem; /* Agregar espacio entre breadcrumb y action-bar */
+}
+
+.breadcrumb a {
+    color: #bb86fc;
+    text-decoration: none;
+}
+
+.breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.breadcrumb-separator {
+    margin: 0 8px;
+    color: #b3b3b3;
+}
+
+@media (max-width: 767px) {
+    .breadcrumb {
+        padding: 8px 0;
+        font-size: 0.9rem;
+        margin-bottom: 1rem; /* Menos espacio en móviles */
+    }
+    
+    .breadcrumb-separator {
+        margin: 0 4px;
+    }
+}
+
+.btn-danger {
+    background: #ffffff !important;
+    color: #121212 !important;
+    border: none !important; /* Eliminar completamente el borde */
+    outline: none !important; /* Eliminar el outline también */
+    box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27); /* Mantener la sombra normal */
+}
+
+.btn-danger::before {
+    background-color: #dc3545 !important;
+}
+
+.btn-danger:hover {
+    color: #ffffff !important;
+}
+
+.btn-danger:hover::before {
+    width: 100%;
+}
+
+.btn-danger:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27) !important;
+}
+
+/* Remover la animación existente que está causando problemas */
+@keyframes hover-rojo {
+    0% {
+        background-color: #ffffff;
+    }
+    100% {
+        background-color: #dc3545;
     }
 }
