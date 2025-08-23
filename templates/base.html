@@ -105,7 +105,6 @@
         const avatarPreview = document.getElementById('avatar-preview');
         let originalAvatarSrc = avatarPreview.src;
 
-        // Remover event listeners previos para evitar duplicados
         changeAvatarButton.replaceWith(changeAvatarButton.cloneNode(true));
         const newChangeAvatarButton = document.getElementById('change-avatar-button');
 
@@ -114,7 +113,6 @@
             avatarInput.click();
         });
 
-        // También remover y recrear el event listener del input
         avatarInput.replaceWith(avatarInput.cloneNode(true));
         const newAvatarInput = document.getElementById('avatar-input');
 
@@ -122,13 +120,11 @@
             const file = newAvatarInput.files[0];
             if (!file) return;
 
-            // Validar tipo de archivo
             if (!file.type.startsWith('image/')) {
                 Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
                 return;
             }
 
-            // Validar tamaño de archivo (máximo 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
                 return;
@@ -235,7 +231,6 @@
     function openPlaylistModal(songId, songName) {
         console.log('Abriendo modal para canción:', songId, songName);
         
-        // Obtener las playlists del usuario
         fetch('/get-user-playlists/')
             .then(response => {
                 console.log('Respuesta del servidor:', response.status);
@@ -288,13 +283,12 @@
                     showConfirmButton: false,
                     cancelButtonText: 'Cancelar',
                     didOpen: () => {
-                        // Añadir event listeners a las opciones de playlist
+
                         document.querySelectorAll('.playlist-option').forEach(option => {
                             option.addEventListener('click', function() {
                                 const playlistId = this.dataset.playlistId;
                                 const playlistName = this.querySelector('div div').textContent;
                                 
-                                // Añadir canción a la playlist
                                 addSongToPlaylist(songId, playlistId, songName, playlistName);
                                 Swal.close();
                             });
@@ -313,7 +307,7 @@
     }
 
     function addSongToPlaylist(songId, playlistId, songName, playlistName) {
-        // Obtener token CSRF
+
         let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
         if (!csrfToken) {
             csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
@@ -363,7 +357,6 @@
         });
     }
 
-    // Función global para manejar likes que puede ser llamada desde cualquier lugar
     window.handleLikeClick = function(songId, likeButton) {
         const songName = likeButton.closest('li').dataset.songName;
         const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -418,7 +411,7 @@
                         title: `'${songName}' eliminada de tus Me Gusta`
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            // Deshacer la acción - volver a dar like con fecha original
+
                             const undoFormData = new FormData();
                             undoFormData.append('csrfmiddlewaretoken', csrfToken);
                             undoFormData.append('undo', 'true');
@@ -512,13 +505,12 @@
 
     function initializeLikeButtons() {
         console.log('Inicializando botones de like...');
-        // Limpiar event listeners anteriores para evitar duplicados
+
         document.querySelectorAll('.like-btn').forEach(button => {
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
         });
         
-        // Añadir event listeners a todos los botones de like
         document.querySelectorAll('.like-btn').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.stopPropagation();
@@ -535,7 +527,7 @@
         songMenuListenersInitialized = true;
 
         document.body.addEventListener('click', function(event) {
-            // Manejar botones de like
+
             const likeButton = event.target.closest('.like-btn');
             if (likeButton) {
                 event.stopPropagation();
@@ -555,7 +547,6 @@
 
                 const isAlreadyOpen = parentLi.classList.contains('menu-open');
 
-                // Cerrar todos los menús abiertos
                 document.querySelectorAll('#song-list li.menu-open').forEach(openLi => {
                     openLi.classList.remove('menu-open');
                     const menuDropdown = openLi.querySelector('.song-menu-dropdown');
@@ -569,7 +560,6 @@
                     dropdown.classList.add('show');
                     menuButton.classList.add('is-visible');
 
-                    // Verificar posición y ajustar si es necesario
                     setTimeout(() => {
                         const rect = dropdown.getBoundingClientRect();
                         const windowHeight = window.innerHeight;
@@ -678,7 +668,7 @@
     function initializeCreatePlaylistButton() {
         const createPlaylistBtn = document.getElementById('create-playlist-btn');
         if (createPlaylistBtn) {
-            // Remover event listeners previos para evitar duplicados
+
             createPlaylistBtn.replaceWith(createPlaylistBtn.cloneNode(true));
             const newBtn = document.getElementById('create-playlist-btn');
             
@@ -716,7 +706,7 @@
                     confirmButtonColor: '#bb86fc',
                     cancelButtonColor: '#dc3545',
                     didOpen: () => {
-                        // Configurar el botón de cambiar imagen
+
                         const changeCoverButton = document.getElementById('change-playlist-cover-button');
                         const coverInput = document.getElementById('playlist-cover');
                         const coverPreview = document.getElementById('playlist-cover-preview');
@@ -728,13 +718,12 @@
                         coverInput.addEventListener('change', (e) => {
                             const file = e.target.files[0];
                             if (file) {
-                                // Validar tipo de archivo
+
                                 if (!file.type.startsWith('image/')) {
                                     Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
                                     return;
                                 }
                                 
-                                // Validar tamaño de archivo (máximo 5MB)
                                 if (file.size > 5 * 1024 * 1024) {
                                     Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
                                     return;
@@ -764,7 +753,6 @@
                     if (result.isConfirmed) {
                         const { name, coverFile } = result.value;
                         
-                        // Obtener el token CSRF de diferentes formas
                         let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
                         if (!csrfToken) {
                             csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
@@ -780,7 +768,6 @@
                             }
                         }
                         
-                        // Mostrar loading si hay imagen
                         if (coverFile) {
                             Swal.fire({
                                 title: 'Creando playlist...',
@@ -816,7 +803,6 @@
                                     title: `Playlist "${name}" creada exitosamente`
                                 });
                                 
-                                // Recargar la lista de playlists via HTMX
                                 htmx.ajax('GET', '{% url "playlist_list" %}', {
                                     target: '.main-content',
                                     swap: 'innerHTML'
@@ -843,7 +829,7 @@
     function initializeEditPlaylistButton() {
         const editPlaylistBtn = document.getElementById('edit-playlist-btn');
         if (editPlaylistBtn) {
-            // Remover event listeners previos para evitar duplicados
+
             editPlaylistBtn.replaceWith(editPlaylistBtn.cloneNode(true));
             const newBtn = document.getElementById('edit-playlist-btn');
             
@@ -852,7 +838,6 @@
                 const currentName = newBtn.dataset.playlistName;
                 const currentCover = newBtn.dataset.playlistCover || '/static/images/default_cover.png';
                 
-                // Escapar comillas para evitar problemas en el HTML
                 const escapedName = currentName.replace(/"/g, '&quot;');
                 const escapedCover = currentCover.replace(/"/g, '&quot;');
                 
@@ -889,7 +874,7 @@
                     confirmButtonColor: '#bb86fc',
                     cancelButtonColor: '#dc3545',
                     didOpen: () => {
-                        // Configurar el botón de cambiar imagen
+
                         const changeCoverButton = document.getElementById('change-edit-playlist-cover-button');
                         const coverInput = document.getElementById('edit-playlist-cover');
                         const coverPreview = document.getElementById('edit-playlist-cover-preview');
@@ -901,13 +886,12 @@
                         coverInput.addEventListener('change', (e) => {
                             const file = e.target.files[0];
                             if (file) {
-                                // Validar tipo de archivo
+
                                 if (!file.type.startsWith('image/')) {
                                     Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
                                     return;
                                 }
                                 
-                                // Validar tamaño de archivo (máximo 5MB)
                                 if (file.size > 5 * 1024 * 1024) {
                                     Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
                                     return;
@@ -937,7 +921,6 @@
                     if (result.isConfirmed) {
                         const { name, coverFile } = result.value;
                         
-                        // Obtener el token CSRF de diferentes formas
                         let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
                         if (!csrfToken) {
                             csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
@@ -953,7 +936,7 @@
                             }
                         }
                         
-                        // Mostrar loading si hay imagen
+
                         if (coverFile) {
                             Swal.fire({
                                 title: 'Actualizando playlist...',
@@ -989,7 +972,6 @@
                                     title: `Playlist "${name}" actualizada exitosamente`
                                 });
                                 
-                                // Recargar la página actual via HTMX
                                 htmx.ajax('GET', window.location.pathname, {
                                     target: '.main-content',
                                     swap: 'innerHTML'
@@ -1016,7 +998,7 @@
     function initializeDeletePlaylistButton() {
         const deletePlaylistBtn = document.getElementById('delete-playlist-btn');
         if (deletePlaylistBtn) {
-            // Remover event listeners previos para evitar duplicados
+
             deletePlaylistBtn.replaceWith(deletePlaylistBtn.cloneNode(true));
             const newBtn = document.getElementById('delete-playlist-btn');
             
@@ -1036,7 +1018,7 @@
                     reverseButtons: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Obtener el token CSRF
+
                         let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
                         if (!csrfToken) {
                             csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
@@ -1052,7 +1034,6 @@
                             }
                         }
                         
-                        // Mostrar loading
                         Swal.fire({
                             title: 'Eliminando playlist...',
                             text: 'Por favor espera',
@@ -1082,7 +1063,6 @@
                                     title: `Playlist "${playlistName}" eliminada exitosamente`
                                 });
                                 
-                                // Redirigir a la lista de playlists
                                 htmx.ajax('GET', '{% url "playlist_list" %}', {
                                     target: '.main-content',
                                     swap: 'innerHTML'
@@ -1136,6 +1116,14 @@
         initializeUserMenuToggle();
         initializeDeletePlaylistButton();
         initializeLikeButtons();
+        
+        // Agregar inicialización de funciones de playlist
+        if (typeof initializePlaylistSorting === 'function') {
+            initializePlaylistSorting();
+        }
+        if (typeof initializeRemoveFromPlaylist === 'function') {
+            initializeRemoveFromPlaylist();
+        }
 
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');
@@ -1154,6 +1142,13 @@
         initializeUserMenuToggle();
         initializeDeletePlaylistButton();
         initializeLikeButtons();
+        
+        if (typeof initializePlaylistSorting === 'function') {
+            initializePlaylistSorting();
+        }
+        if (typeof initializeRemoveFromPlaylist === 'function') {
+            initializeRemoveFromPlaylist();
+        }
 
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');
@@ -1232,6 +1227,23 @@
                 });
         }, 3000);
     }
+
+
+    function cleanupPlaylistListeners() {
+
+        const sortableLists = document.querySelectorAll('.song-list-sortable');
+        sortableLists.forEach(list => {
+            if (list.sortableInstance) {
+                list.sortableInstance.destroy();
+                list.sortableInstance = null;
+            }
+        });
+    }
+
+    document.body.addEventListener('htmx:beforeSwap', function() {
+
+        cleanupPlaylistListeners();
+    });
 
     window.showQueue = function() {
         console.log('Cola actual:', songQueue.map(song => song.name));
