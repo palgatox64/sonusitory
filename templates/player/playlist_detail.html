@@ -32,6 +32,13 @@
                 data-playlist-cover="{{ playlist.cover_image_url|default:'' }}">
                 Editar Playlist
             </button>
+            <button 
+                id="delete-playlist-btn" 
+                class="btn btn-danger"
+                data-playlist-id="{{ playlist.id }}"
+                data-playlist-name="{{ playlist.name }}">
+                Eliminar Playlist
+            </button>
         </p>
     </div>
     

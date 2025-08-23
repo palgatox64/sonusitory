@@ -30,6 +30,7 @@ urlpatterns = [
     path('edit-playlist/<int:playlist_id>/', views.edit_playlist, name='edit_playlist'),
     path('get-user-playlists/', views.get_user_playlists, name='get_user_playlists'),
     path('add-to-playlist/<str:song_id>/<int:playlist_id>/', views.add_to_playlist, name='add_to_playlist'),
+    path('delete-playlist/<int:playlist_id>/', views.delete_playlist, name='delete_playlist'),
 
     
     

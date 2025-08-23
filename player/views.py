@@ -548,3 +548,14 @@ def get_user_playlists(request):
         for playlist in playlists
     ]
     return JsonResponse(playlists_data, safe=False)
+
+@login_required
+def delete_playlist(request, playlist_id):
+    if request.method == 'POST':
+        try:
+            playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
+            playlist.delete()
+            return JsonResponse({'success': True})
+        except Playlist.DoesNotExist:
+            return JsonResponse({'error': 'Playlist no encontrada'}, status=404)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)

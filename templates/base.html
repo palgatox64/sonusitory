@@ -659,6 +659,7 @@
         initializeCreatePlaylistButton();
         initializeEditPlaylistButton();
         initializeUserMenuToggle();
+        initializeDeletePlaylistButton();
     });
 
     function initializeCreatePlaylistButton() {
@@ -999,6 +1000,99 @@
         }
     }
 
+    function initializeDeletePlaylistButton() {
+        const deletePlaylistBtn = document.getElementById('delete-playlist-btn');
+        if (deletePlaylistBtn) {
+            // Remover event listeners previos para evitar duplicados
+            deletePlaylistBtn.replaceWith(deletePlaylistBtn.cloneNode(true));
+            const newBtn = document.getElementById('delete-playlist-btn');
+            
+            newBtn.addEventListener('click', function() {
+                const playlistId = newBtn.dataset.playlistId;
+                const playlistName = newBtn.dataset.playlistName;
+                
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: `Esta acción eliminará permanentemente la playlist "${playlistName}" y no se puede deshacer.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    reverseButtons: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Obtener el token CSRF
+                        let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                        if (!csrfToken) {
+                            csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                        }
+                        if (!csrfToken) {
+                            const cookies = document.cookie.split(';');
+                            for (let cookie of cookies) {
+                                const [cookieName, value] = cookie.trim().split('=');
+                                if (cookieName === 'csrftoken') {
+                                    csrfToken = value;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Mostrar loading
+                        Swal.fire({
+                            title: 'Eliminando playlist...',
+                            text: 'Por favor espera',
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            didOpen: () => Swal.showLoading()
+                        });
+                        
+                        const formData = new FormData();
+                        formData.append('csrfmiddlewaretoken', csrfToken);
+                        
+                        fetch(`/delete-playlist/${playlistId}/`, {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => {
+                            if (response.ok) {
+                                const Toast = Swal.mixin({
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true
+                                });
+                                Toast.fire({
+                                    icon: 'success',
+                                    title: `Playlist "${playlistName}" eliminada exitosamente`
+                                });
+                                
+                                // Redirigir a la lista de playlists
+                                htmx.ajax('GET', '{% url "playlist_list" %}', {
+                                    target: '.main-content',
+                                    swap: 'innerHTML'
+                                });
+                                
+                            } else {
+                                throw new Error('Error al eliminar la playlist');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'No se pudo eliminar la playlist'
+                            });
+                        });
+                    }
+                });
+            });
+        }
+    }
+
     document.body.addEventListener('htmx:beforeRequest', function(event) {
         if (event.detail.elt.id !== 'scan-button' && event.detail.elt.id !== 'quick-scan-button' && event.detail.elt.id !== 'cover-scan-button') {
             Swal.fire({
@@ -1027,6 +1121,7 @@
         initializeCreatePlaylistButton();
         initializeEditPlaylistButton();
         initializeUserMenuToggle();
+        initializeDeletePlaylistButton();
 
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');
@@ -1043,6 +1138,7 @@
         initializeCreatePlaylistButton();
         initializeEditPlaylistButton();
         initializeUserMenuToggle();
+        initializeDeletePlaylistButton();
 
         const audioPlayer = document.getElementById('main-audio-player');
         const songList = document.getElementById('song-list');
