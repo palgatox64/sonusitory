@@ -617,13 +617,18 @@ def get_user_playlists(request):
 
 @login_required
 def delete_playlist(request, playlist_id):
-    """Eliminar una playlist"""
     if request.method == 'POST':
         try:
             playlist = get_object_or_404(Playlist, id=playlist_id, user=request.user)
             playlist_name = playlist.name
             playlist.delete()
-            return JsonResponse({'success': True, 'message': f'Playlist "{playlist_name}" eliminada correctamente'})
+            # Añadir URL de redirección
+            from django.urls import reverse
+            return JsonResponse({
+                'success': True,
+                'message': f'Playlist "{playlist_name}" eliminada correctamente',
+                'redirect_url': reverse('playlist_list')
+            })
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
