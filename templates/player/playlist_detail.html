@@ -3,11 +3,14 @@
 
 {% block content %}
     <div style="display: flex; align-items: flex-end; gap: 20px; margin-bottom: 2rem;">
-        <div style="width: 150px; height: 150px; position: relative;">
+        <div class="playlist-cover-container" style="width: 150px; height: 150px;">
+            <div class="cover-placeholder"></div>
             <img 
                 src="{% if playlist.cover_image_url %}{{ playlist.cover_image_url }}{% else %}{% static 'images/default_cover.png' %}{% endif %}" 
                 alt="{{ playlist.name }}" 
-                style="width: 150px; height: 150px; border-radius: 5px; object-fit: cover;">
+                class="playlist-cover"
+                style="width: 150px; height: 150px; border-radius: 5px; object-fit: cover;"
+                onload="this.style.display='block'; this.previousElementSibling.style.display='none';">
         </div>
         <div>
             <h1>{{ playlist.name }}</h1>

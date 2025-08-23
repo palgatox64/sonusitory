@@ -29,8 +29,14 @@
                    hx-get="{% url 'playlist_detail' playlist_id=playlist.id %}"
                    hx-target=".main-content"
                    hx-push-url="true">
-                    <img src="{% if playlist.cover_image_url %}{{ playlist.cover_image_url }}{% else %}{% static 'images/default_cover.png' %}{% endif %}" 
-                         alt="{{ playlist.name }}">
+                    <div class="playlist-cover-container">
+                        <div class="cover-placeholder"></div>
+                        <img
+                            src="{% if playlist.cover_image_url %}{{ playlist.cover_image_url }}{% else %}{% static 'images/default_cover.png' %}{% endif %}"
+                            alt="{{ playlist.name }}"
+                            class="playlist-cover"
+                            onload="this.style.display='block'; this.previousElementSibling.style.display='none';">
+                    </div>
                     <div class="playlist-info">
                         <h3 class="playlist-name">{{ playlist.name }}</h3>
                         <p class="playlist-count">{{ playlist.songs.count }} canciones</p>

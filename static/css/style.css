@@ -677,8 +677,9 @@ login-providers {
 }
 
 .cover-placeholder {
-    width: 150px;
-    height: 150px;
+    /* Antes tenía width/height fijos (150px) */
+    width: 100%;
+    height: 100%;
     border-radius: 5px;
     background: linear-gradient(90deg, #404040 25%, #505050 50%, #404040 75%);
     background-size: 200% 100%;
@@ -845,6 +846,36 @@ login-providers {
     
     .breadcrumb-separator {
         margin: 0 4px;
+    }
+}
+
+/* --- Mejora de botones de acción en móviles --- */
+@media (max-width: 767px) {
+    .action-bar { /* Evitar espacios innecesarios en un solo hijo */
+        justify-content: flex-start;
+    }
+
+    .action-bar p {
+        flex-wrap: wrap;           /* Permitir salto a varias filas */
+        gap: 0.75rem;              /* Espaciado más compacto */
+        width: 100%;
+    }
+
+    .action-bar .btn {
+        font-size: 14px;           /* Un poco más pequeño en móvil */
+        padding: 12px 16px;        /* Botón más compacto */
+        text-align: center;
+        white-space: normal;       /* Permitir que el texto largo haga wrap */
+        line-height: 1.2;
+        flex: 1 1 calc(50% - 0.75rem); /* Dos columnas por fila por defecto */
+        min-width: 0;              /* Evitar desbordes por contenido */
+    }
+}
+
+/* Pantallas muy estrechas: una columna completa por fila */
+@media (max-width: 420px) {
+    .action-bar .btn {
+        flex: 1 1 100%;
     }
 }
 
@@ -1266,4 +1297,35 @@ login-providers {
 
 .swal2-popup.dark-modal .swal2-styled.swal2-cancel:hover {
     background-color: #565656 !important;
+}
+
+/* Portada de playlists con shimmer (listado y detalle) */
+.playlist-cover-container {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.playlist-cover {
+    width: 120px;
+    height: 120px;
+    border-radius: 12px;
+    object-fit: cover;
+    display: none; /* se muestra al onload */
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* Responsive: mantener tamaños como antes */
+@media (max-width: 1024px) and (min-width: 768px) {
+    .playlist-cover-container { width: 100px; height: 100px; }
+    .playlist-cover { width: 100px; height: 100px; }
+}
+
+@media (max-width: 767px) {
+    .playlist-cover-container { width: 60px; height: 60px; }
+    .playlist-cover { width: 60px; height: 60px; border-radius: 8px; }
 }
