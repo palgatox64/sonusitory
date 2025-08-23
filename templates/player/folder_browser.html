@@ -47,14 +47,25 @@
 
         <div class="action-bar">
             <p>
-                <a href="{% url 'select_folder' %}"
-                   hx-get="{% url 'select_folder' %}"
-                   hx-target=".main-content"
-                   hx-push-url="true"
-                   class="btn"
-                   id="change-folder-btn">
-                    Analizar carpeta de música
-                </a>
+                {% if not breadcrumb %}
+                    <a href="{% url 'select_folder' %}"
+                       hx-get="{% url 'select_folder' %}"
+                       hx-target=".main-content"
+                       hx-push-url="true"
+                       class="btn"
+                       id="change-folder-btn">
+                        Analizar carpeta de música
+                    </a>
+                {% else %}
+                    <a href="{% url 'folder_browser' %}"
+                       hx-get="{% url 'folder_browser' %}"
+                       hx-target=".main-content"
+                       hx-push-url="true"
+                       class="btn"
+                       id="back-to-library-btn">
+                        Volver a la biblioteca
+                    </a>
+                {% endif %}
                 <a href="{% url 'liked_songs' %}"
                    hx-get="{% url 'liked_songs' %}"
                    hx-target=".main-content"

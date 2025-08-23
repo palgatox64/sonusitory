@@ -7,11 +7,6 @@
     
     <div class="action-bar">
         <p>
-            <button 
-                id="create-playlist-btn" 
-                class="btn">
-                Crear Nueva Playlist
-            </button>
             <a href="{% url 'folder_browser' %}" 
                hx-get="{% url 'folder_browser' %}" 
                hx-target=".main-content" 
@@ -19,6 +14,11 @@
                class="btn">
                 Volver a la Biblioteca
             </a>
+            <button 
+                id="create-playlist-btn" 
+                class="btn">
+                Crear Nueva Playlist
+            </button>
         </p>
     </div>
 
