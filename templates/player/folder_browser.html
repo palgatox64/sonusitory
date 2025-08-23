@@ -25,16 +25,12 @@
         {% if has_songs and album and songs %}
             <div class="album-header">
                 <div class="album-cover-container">
-                    {% if album.cover_image_id %}
-                        <div class="cover-placeholder"></div>
-                        <img
-                            src="{% url 'album_cover' album_id=album.id %}"
-                            alt="Cover for {{ album.name }}"
-                            class="album-cover"
-                            onload="this.style.display='block'; this.previousElementSibling.style.display='none';">
-                    {% else %}
-                        <div class="cover-placeholder"></div>
-                    {% endif %}
+                    <div class="cover-placeholder"></div>
+                    <img
+                        src="{% url 'album_cover' album_id=album.id %}"
+                        alt="Cover for {{ album.name }}"
+                        class="album-cover"
+                        onload="this.style.display='block'; this.previousElementSibling.style.display='none';">
                 </div>
                 <div class="album-info">
                     <h1>{{ album.name }}</h1>
