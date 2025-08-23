@@ -105,14 +105,34 @@
         const avatarPreview = document.getElementById('avatar-preview');
         let originalAvatarSrc = avatarPreview.src;
 
-        changeAvatarButton.addEventListener('click', () => {
+        // Remover event listeners previos para evitar duplicados
+        changeAvatarButton.replaceWith(changeAvatarButton.cloneNode(true));
+        const newChangeAvatarButton = document.getElementById('change-avatar-button');
+
+        newChangeAvatarButton.addEventListener('click', () => {
             originalAvatarSrc = avatarPreview.src;
             avatarInput.click();
         });
 
-        avatarInput.addEventListener('change', () => {
-            const file = avatarInput.files[0];
+        // También remover y recrear el event listener del input
+        avatarInput.replaceWith(avatarInput.cloneNode(true));
+        const newAvatarInput = document.getElementById('avatar-input');
+
+        newAvatarInput.addEventListener('change', () => {
+            const file = newAvatarInput.files[0];
             if (!file) return;
+
+            // Validar tipo de archivo
+            if (!file.type.startsWith('image/')) {
+                Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
+                return;
+            }
+
+            // Validar tamaño de archivo (máximo 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -163,7 +183,7 @@
                 });
             };
             reader.readAsDataURL(file);
-            avatarInput.value = '';
+            newAvatarInput.value = '';
         });
     }
 
