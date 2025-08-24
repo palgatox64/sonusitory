@@ -5,12 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sonusitory</title>
+    <!-- HTMX for dynamic content loading without page refreshes -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Font Awesome icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- SweetAlert2 for beautiful alerts and notifications -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- CSRF token for security in AJAX requests -->
     <meta name="csrf-token" content="{{ csrf_token }}">
     <script>
-
+        // Configure HTMX to automatically include CSRF token in POST requests
         document.addEventListener('htmx:configRequest', function(event) {
             if ((event.detail.verb || '').toLowerCase() === 'post') {
                 const token = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -18,22 +22,27 @@
             }
         });
 
-
+        // Global URL variables for JavaScript usage across the application
         window.uploadAvatarUrl = "{% url 'upload_avatar' %}";
         window.createPlaylistUrl = "{% url 'create_playlist' %}";
         window.playlistListUrl = "{% url 'playlist_list' %}";
     </script>
+    <!-- Favicon and custom styles -->
     <link rel="icon" type="image/png" href="{% static 'images/favicon.png' %}">
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
 
+    <!-- Main navigation bar -->
     <nav style="padding: 1rem 2rem; background-color: #181818; border-bottom: 1px solid #282828; display: flex; justify-content: space-between; align-items: center;">
 
+        <!-- Logo section with conditional HTMX navigation -->
         {% if request.resolver_match.url_name == 'login' or request.resolver_match.url_name == 'register' %}
+            <!-- Static logo for login/register pages -->
             <img src="{% static 'images/sonusitory_with_icon.png' %}" alt="Sonusitory" style="height: 40px;">
         {% else %}
+            <!-- Interactive logo with HTMX navigation for authenticated pages -->
             <a href="{% url 'artist_list' %}"
                 hx-get="{% url 'artist_list' %}"
                 hx-target=".main-content"
@@ -42,14 +51,19 @@
             </a>
         {% endif %}
 
+        <!-- User authentication section -->
         <div>
             {% if user.is_authenticated %}
+                <!-- User dropdown menu for authenticated users -->
                 <div class="dropdown">
                     <button class="dropdown-toggle-btn" id="user-menu-toggle">
+                        <!-- User avatar with fallback to default image -->
                         <img src="{% if user.userprofile and user.userprofile.avatar_url %}{{ user.userprofile.avatar_url }}{% else %}{% static 'images/default_avatar.jpg' %}{% endif %}" alt="Menú de usuario" class="user-avatar">
                     </button>
                     <div class="dropdown-menu" id="user-menu">
+                        <!-- Account settings link with HTMX navigation -->
                         <a href="{% url 'account' %}" hx-get="{% url 'account' %}" hx-target=".main-content" hx-push-url="true" class="btn">Cuenta</a>
+                        <!-- Logout form -->
                         <form action="{% url 'logout' %}" method="post" style="margin: 0;">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger">
@@ -60,6 +74,7 @@
                 </div>
 
             {% else %}
+                <!-- Authentication links for non-authenticated users -->
                 {% if request.resolver_match.url_name != 'login' %}
                     <a href="{% url 'login' %}" style="margin-right: 1rem;" class="btn">Iniciar Sesión</a>
                 {% endif %}
@@ -71,10 +86,12 @@
         </div>
     </nav>
 
+    <!-- Main content area where HTMX loads dynamic content -->
     <div class="main-content">
         {% block content %}{% endblock %}
     </div>
 
+    <!-- Persistent audio player section -->
     <div id="player-wrapper">
         {% block player %}
         <div class="persistent-player">
@@ -84,13 +101,18 @@
         {% endblock %}
     </div>
 
-
+    <!-- JavaScript dependencies and custom scripts -->
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/playlist.js' %}"></script>
     <script src="{% static 'js/song-menu.js' %}"></script>
     
     {% block extra_scripts %}{% endblock %}
     <script>
+/**
+ * Initialize delete playlist functionality
+ * Handles playlist deletion with confirmation dialog and proper error handling
+ * Uses event delegation to work with dynamically loaded content
+ */
 function initializeDeletePlaylist() {
     const btn = document.getElementById('delete-playlist-btn');
     if (!btn || btn.dataset.bound === '1') return;
@@ -100,6 +122,7 @@ function initializeDeletePlaylist() {
         const playlistId = btn.dataset.playlistId;
         const playlistName = btn.dataset.playlistName || 'esta playlist';
 
+        // Show confirmation dialog using SweetAlert2 or fallback to native confirm
         const doConfirm = async () => {
             if (window.Swal) {
                 const result = await Swal.fire({
@@ -118,10 +141,12 @@ function initializeDeletePlaylist() {
 
         if (!(await doConfirm())) return;
 
+        // Get CSRF token for secure request
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content
             || document.querySelector('input[name="csrfmiddlewaretoken"]')?.value;
 
         try {
+            // Send delete request to server
             const res = await fetch(`/delete-playlist/${playlistId}/`, {
                 method: 'POST',
                 headers: {
@@ -132,22 +157,24 @@ function initializeDeletePlaylist() {
             const data = await res.json();
 
             if (data.success) {
-
+                // Success: show confirmation and redirect
                 const target = data.redirect_url || window.playlistListUrl || '/playlists/';
                 if (window.Swal) {
                     await Swal.fire('Eliminada', data.message || 'Playlist eliminada', 'success');
                 }
                 window.location.href = target;
             } else {
+                // Error: show error message
                 if (window.Swal) Swal.fire('Error', data.error || 'No se pudo eliminar la playlist', 'error');
             }
         } catch (e) {
+            // Network or other error: show generic error message
             if (window.Swal) Swal.fire('Error', 'Ocurrió un error al eliminar', 'error');
         }
     });
 }
 
-
+// Initialize on page load and after HTMX content updates
 document.addEventListener('DOMContentLoaded', initializeDeletePlaylist);
 document.body.addEventListener('htmx:afterSettle', initializeDeletePlaylist);
 </script>

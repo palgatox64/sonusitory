@@ -476,7 +476,7 @@ login-providers {
 }
 
 .like-btn {
-    display: none !important; /* Oculto por defecto */
+    display: none !important;
     background: rgba(255, 255, 255, 0.1);
     border: none;
     color: #b3b3b3;
@@ -491,24 +491,20 @@ login-providers {
     z-index: 10;
 }
 
-/* Mostrar botón de like cuando la canción está liked */
 .like-btn.liked {
     display: flex !important;
     color: #bb86fc;
     background: rgba(187, 134, 252, 0.2);
 }
 
-/* Mostrar botón de like al hacer hover sobre la canción */
 #song-list li:hover .like-btn {
     display: flex !important;
 }
 
-/* Para playlists también */
 .sortable-song-item:hover .like-btn {
     display: flex !important;
 }
 
-/* Efectos de hover para el botón de like */
 .like-btn:hover {
     color: #bb86fc !important;
     background: rgba(187, 134, 252, 0.3) !important;
@@ -520,9 +516,8 @@ login-providers {
     color: #ffffff !important;
 }
 
-/* Asegurar que el botón del menú también se comporte igual */
 .song-menu-btn {
-    display: none !important; /* Oculto por defecto */
+    display: none !important;
     background-color: rgba(255, 255, 255, 0.1);
     border: none;
     color: #fff;
@@ -535,13 +530,11 @@ login-providers {
     transition: background-color 0.2s ease;
 }
 
-/* Mostrar botón del menú al hacer hover */
 #song-list li:hover .song-menu-btn,
 .song-menu-btn.is-visible {
     display: flex !important;
 }
 
-/* Para playlists también */
 .sortable-song-item:hover .song-menu-btn {
     display: flex !important;
 }
@@ -562,9 +555,8 @@ login-providers {
     border: 1px solid #404040;
     white-space: nowrap;
     display: none;
-    /* Añadir estas propiedades para evitar que el contenido se desborde */
     overflow: hidden;
-    padding: 0; /* Asegurar que no hay padding extra */
+    padding: 0;
 }
 
 .song-menu-dropdown.show {
@@ -594,12 +586,10 @@ login-providers {
     transition: background-color 0.2s ease;
     position: relative;
     box-sizing: border-box;
-    /* Añadir estas propiedades para mantener los botones en su lugar */
     flex-shrink: 0;
-    min-height: 44px; /* Altura mínima para touch targets */
+    min-height: 44px;
 }
 
-/* Aplicar el borde a todos menos al último */
 .song-menu-dropdown button:not(:last-child) {
     border-bottom: 1px solid #383838;
 }
@@ -623,10 +613,9 @@ login-providers {
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1.2;
-    white-space: nowrap; /* Evitar que el texto se rompa en múltiples líneas */
+    white-space: nowrap;
 }
 
-/* Asegurar que el contenedor del menú tenga la posición correcta */
 .song-menu-container {
     position: absolute;
     right: 15px;
@@ -641,14 +630,14 @@ login-providers {
 #song-list li.menu-open {
     z-index: 101;
     position: relative;
-    /* Asegurar que el overflow esté visible para el menú */
+
     overflow: visible;
 }
 
-/* Añadir estilos específicos para mejorar la contención del menú */
+
 #song-list li {
     position: relative;
-    overflow: visible; /* Cambiar de hidden a visible para permitir que el menú sea visible */
+    overflow: visible;
 }
 
 .album-header {
@@ -677,7 +666,7 @@ login-providers {
 }
 
 .cover-placeholder {
-    /* Antes tenía width/height fijos (150px) */
+
     width: 100%;
     height: 100%;
     border-radius: 5px;
@@ -719,7 +708,6 @@ login-providers {
     margin-top: 20px;
 }
 
-/* Estilos específicos para la lista de playlists */
 .playlist-list {
     display: flex;
     flex-direction: column;
@@ -775,7 +763,6 @@ login-providers {
     font-weight: 400;
 }
 
-/* Responsive para tablets */
 @media (max-width: 1024px) and (min-width: 768px) {
     .playlist-list a {
         padding: 20px;
@@ -797,7 +784,6 @@ login-providers {
     }
 }
 
-/* Responsive para móviles */
 @media (max-width: 767px) {
     .playlist-list a {
         padding: 15px;
@@ -849,30 +835,29 @@ login-providers {
     }
 }
 
-/* --- Mejora de botones de acción en móviles --- */
 @media (max-width: 767px) {
-    .action-bar { /* Evitar espacios innecesarios en un solo hijo */
+    .action-bar {
         justify-content: flex-start;
     }
 
     .action-bar p {
-        flex-wrap: wrap;           /* Permitir salto a varias filas */
-        gap: 0.75rem;              /* Espaciado más compacto */
+        flex-wrap: wrap;
+        gap: 0.75rem;
         width: 100%;
     }
 
     .action-bar .btn {
-        font-size: 14px;           /* Un poco más pequeño en móvil */
-        padding: 12px 16px;        /* Botón más compacto */
+        font-size: 14px;
+        padding: 12px 16px;
         text-align: center;
-        white-space: normal;       /* Permitir que el texto largo haga wrap */
+        white-space: normal;
         line-height: 1.2;
-        flex: 1 1 calc(50% - 0.75rem); /* Dos columnas por fila por defecto */
-        min-width: 0;              /* Evitar desbordes por contenido */
+        flex: 1 1 calc(50% - 0.75rem);
+        min-width: 0;
     }
 }
 
-/* Pantallas muy estrechas: una columna completa por fila */
+
 @media (max-width: 420px) {
     .action-bar .btn {
         flex: 1 1 100%;
@@ -882,7 +867,7 @@ login-providers {
 .breadcrumb {
     padding: 8px 0;
     font-size: 1.2rem;
-    margin-bottom: 1.5rem; /* Agregar espacio entre breadcrumb y action-bar */
+    margin-bottom: 1.5rem; 
 }
 
 .breadcrumb a {
@@ -903,7 +888,7 @@ login-providers {
     .breadcrumb {
         padding: 8px 0;
         font-size: 1.1rem;
-        margin-bottom: 1rem; /* Menos espacio en móviles */
+        margin-bottom: 1rem;
     }
     
     .breadcrumb-separator {
@@ -914,9 +899,9 @@ login-providers {
 .btn-danger {
     background: #ffffff !important;
     color: #121212 !important;
-    border: none !important; /* Eliminar completamente el borde */
-    outline: none !important; /* Eliminar el outline también */
-    box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27); /* Mantener la sombra normal */
+    border: none !important; 
+    outline: none !important;
+    box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27);
 }
 
 .btn-danger::before {
@@ -937,7 +922,7 @@ login-providers {
     box-shadow: 4px 8px 19px -3px rgba(0, 0, 0, 0.27) !important;
 }
 
-/* Regla más específica para asegurar el comportamiento correcto */
+
 #song-list li .like-btn:not(.liked),
 .sortable-song-item .like-btn:not(.liked) {
     display: none !important;
@@ -948,13 +933,13 @@ login-providers {
     display: flex !important;
 }
 
-/* Los botones con like siempre visibles */
+
 #song-list li .like-btn.liked,
 .sortable-song-item .like-btn.liked {
     display: flex !important;
 }
 
-/* Estilos para playlist sortable */
+
 .song-list-sortable {
     list-style: none;
     padding: 0;
@@ -971,7 +956,7 @@ login-providers {
     cursor: pointer;
     transition: all 0.2s ease;
     gap: 12px;
-    position: relative; /* Importante para z-index */
+    position: relative;
 }
 
 .sortable-song-item:hover {
@@ -1004,7 +989,7 @@ login-providers {
     display: flex;
     align-items: center;
     gap: 8px;
-    z-index: 20; /* Mayor z-index para asegurar que esté encima */
+    z-index: 20;
 }
 
 .remove-from-playlist-btn {
@@ -1029,7 +1014,7 @@ login-providers {
     transform: scale(1.1);
 }
 
-/* Estilos para sortable.js */
+
 .sortable-ghost {
     opacity: 0.5;
     background-color: #404040 !important;
@@ -1070,7 +1055,7 @@ login-providers {
     }
 }
 
-/* Estilos para playlist sortable */
+
 .song-list-sortable {
     list-style: none;
     padding: 0;
@@ -1153,7 +1138,7 @@ login-providers {
     background-color: rgba(220, 53, 69, 0.1);
 }
 
-/* Estilos para sortable.js */
+
 .sortable-ghost {
     opacity: 0.5;
     background-color: #404040 !important;
@@ -1168,7 +1153,7 @@ login-providers {
     transform: rotate(5deg);
 }
 
-/* Responsive para drag & drop */
+
 @media (max-width: 768px) {
     .sortable-song-item {
         padding: 10px 12px;
@@ -1194,9 +1179,9 @@ login-providers {
     }
 }
 
-/* Asegurar que los botones sean visibles y clickeables */
+
 .like-btn {
-    display: flex !important; /* Forzar visibilidad */
+    display: flex !important;
     background: rgba(255, 255, 255, 0.1);
     border: none;
     color: #b3b3b3;
@@ -1270,10 +1255,10 @@ login-providers {
     display: flex;
     align-items: center;
     gap: 8px;
-    z-index: 20; /* Mayor z-index para asegurar que esté encima */
+    z-index: 20;
 }
 
-/* Estilos para modales oscuros */
+
 .dark-modal {
     background-color: #181818 !important;
     border: 1px solid #404040 !important;
@@ -1288,7 +1273,7 @@ login-providers {
     color: #e0e0e0 !important;
 }
 
-/* Mejorar el contraste de SweetAlert en tema oscuro */
+
 .swal2-popup.dark-modal .swal2-styled.swal2-cancel {
     background-color: #404040 !important;
     color: #ffffff !important;
@@ -1299,7 +1284,7 @@ login-providers {
     background-color: #565656 !important;
 }
 
-/* Portada de playlists con shimmer (listado y detalle) */
+
 .playlist-cover-container {
     width: 120px;
     height: 120px;
@@ -1312,14 +1297,14 @@ login-providers {
     height: 120px;
     border-radius: 12px;
     object-fit: cover;
-    display: none; /* se muestra al onload */
+    display: none;
     position: absolute;
     top: 0;
     left: 0;
     z-index: 1;
 }
 
-/* Responsive: mantener tamaños como antes */
+
 @media (max-width: 1024px) and (min-width: 768px) {
     .playlist-cover-container { width: 100px; height: 100px; }
     .playlist-cover { width: 100px; height: 100px; }

@@ -1,12 +1,18 @@
-// Funciones de ordenamiento de playlist
+
+/**
+ * Initializes drag-and-drop sorting functionality for playlist songs
+ * Loads SortableJS library and sets up drag handles with save functionality
+ */
 async function initializePlaylistSorting() {
     const sortableList = document.getElementById('sortable-song-list');
     if (!sortableList) return;
 
+    // Prevent duplicate initialization
     if (sortableList.dataset.sortableInit === '1') return;
     sortableList.dataset.sortableInit = '1';
 
     try {
+        // Load SortableJS library from CDN with fallback
         await loadScriptOnce('https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js')
             .catch(() => loadScriptOnce('https://unpkg.com/sortablejs@1.15.0/Sortable.min.js'));
     } catch (e) {
@@ -15,23 +21,28 @@ async function initializePlaylistSorting() {
         return;
     }
 
+    // Initialize sortable with drag handle and visual feedback
     const sortable = new Sortable(sortableList, {
-        handle: '.song-drag-handle',
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        chosenClass: 'sortable-chosen',
-        dragClass: 'sortable-drag',
+        handle: '.song-drag-handle',  // Only allow dragging from handle
+        animation: 150,               // Smooth animation duration
+        ghostClass: 'sortable-ghost', // Class for drag preview
+        chosenClass: 'sortable-chosen', // Class for selected item
+        dragClass: 'sortable-drag',     // Class while dragging
         onEnd: function() {
+            // Save new order to server when drag ends
             const playlistId = sortableList.dataset.playlistId;
             const songOrders = Array.from(sortableList.children).map(li => li.dataset.songId);
 
+            // Show saving notification
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000, timerProgressBar: true });
             Toast.fire({ icon: 'info', title: 'Guardando nuevo orden...' });
 
+            // Prepare form data with new order
             const formData = new FormData();
             formData.append('csrfmiddlewaretoken', getCsrfToken());
             songOrders.forEach(songId => formData.append('song_orders[]', songId));
 
+            // Send new order to server
             fetch(`/reorder-playlist/${playlistId}/`, { method: 'POST', body: formData })
                 .then((r) => {
                     if (r.ok) {
@@ -47,15 +58,22 @@ async function initializePlaylistSorting() {
         }
     });
 
+    // Store sortable instance for cleanup
     sortableList.sortableInstance = sortable;
 }
 
+/**
+ * Handles removing a song from a playlist with confirmation dialog
+ * Includes smooth animation and UI updates
+ * @param {HTMLElement} buttonEl - The remove button element that was clicked
+ */
 function handleRemoveFromPlaylist(buttonEl) {
     const songId = buttonEl.dataset.songId;
     const playlistId = buttonEl.dataset.playlistId;
     const songItem = buttonEl.closest('li');
     const songTitle = songItem?.querySelector('.song-title')?.textContent || 'la canción';
 
+    // Show confirmation dialog
     Swal.fire({
         title: '¿Quitar canción?',
         text: `¿Estás seguro de que quieres quitar "${songTitle}" de esta playlist?`,
@@ -67,6 +85,7 @@ function handleRemoveFromPlaylist(buttonEl) {
     }).then((result) => {
         if (!result.isConfirmed) return;
 
+        // Send removal request to server
         const formData = new FormData();
         formData.append('csrfmiddlewaretoken', getCsrfToken());
 
@@ -75,16 +94,19 @@ function handleRemoveFromPlaylist(buttonEl) {
             if (!response.ok) throw new Error('Error al eliminar canción');
 
             if (songItem) {
+                // Animate song removal from UI
                 songItem.style.transition = 'all 0.3s ease';
                 songItem.style.opacity = '0';
                 songItem.style.transform = 'translateX(-20px)';
                 setTimeout(() => {
                     songItem.remove();
+                    // Update song count in header
                     const countElement = document.querySelector('h2');
                     if (countElement) {
                         const currentCount = document.querySelectorAll('.sortable-song-item').length;
                         countElement.textContent = `${currentCount} canciones`;
                     }
+                    // Show success notification
                     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
                     Toast.fire({ icon: 'success', title: `"${songTitle}" eliminada de la playlist` });
                 }, 300);
@@ -97,14 +119,20 @@ function handleRemoveFromPlaylist(buttonEl) {
     });
 }
 
+/**
+ * Initializes the create playlist button with modal dialog functionality
+ * Handles name input, cover image upload, and form validation
+ */
 function initializeCreatePlaylistButton() {
     const createPlaylistBtn = document.getElementById('create-playlist-btn');
     if (!createPlaylistBtn) return;
 
+    // Remove existing event listeners to prevent duplicates
     createPlaylistBtn.replaceWith(createPlaylistBtn.cloneNode(true));
     const newBtn = document.getElementById('create-playlist-btn');
     
     newBtn.addEventListener('click', function() {
+        // Show create playlist modal with form
         Swal.fire({
             title: 'Crear Nueva Playlist',
             html: `
@@ -138,6 +166,7 @@ function initializeCreatePlaylistButton() {
             confirmButtonColor: '#bb86fc',
             cancelButtonColor: '#dc3545',
             didOpen: () => {
+                // Set up cover image selection functionality
                 const changeCoverButton = document.getElementById('change-playlist-cover-button');
                 const coverInput = document.getElementById('playlist-cover');
                 const coverPreview = document.getElementById('playlist-cover-preview');
@@ -146,19 +175,23 @@ function initializeCreatePlaylistButton() {
                     coverInput.click();
                 });
                 
+                // Handle image file selection with validation
                 coverInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (file) {
+                        // Validate file type
                         if (!file.type.startsWith('image/')) {
                             Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
                             return;
                         }
                         
+                        // Validate file size (5MB limit)
                         if (file.size > 5 * 1024 * 1024) {
                             Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
                             return;
                         }
                         
+                        // Show image preview
                         const reader = new FileReader();
                         reader.onload = (e) => {
                             coverPreview.src = e.target.result;
@@ -169,6 +202,7 @@ function initializeCreatePlaylistButton() {
                 });
             },
             preConfirm: () => {
+                // Validate form before submission
                 const name = document.getElementById('playlist-name').value;
                 const coverFile = document.getElementById('playlist-cover').files[0];
                 
@@ -183,6 +217,7 @@ function initializeCreatePlaylistButton() {
             if (result.isConfirmed) {
                 const { name, coverFile } = result.value;
                 
+                // Show loading state if uploading image
                 if (coverFile) {
                     Swal.fire({
                         title: 'Creando playlist...',
@@ -193,6 +228,7 @@ function initializeCreatePlaylistButton() {
                     });
                 }
                 
+                // Prepare form data for submission
                 const formData = new FormData();
                 formData.append('csrfmiddlewaretoken', getCsrfToken());
                 formData.append('name', name);
@@ -200,12 +236,14 @@ function initializeCreatePlaylistButton() {
                     formData.append('cover_image', coverFile);
                 }
                 
+                // Submit playlist creation request
                 fetch(window.createPlaylistUrl, {
                     method: 'POST',
                     body: formData
                 })
                 .then(response => {
                     if (response.ok) {
+                        // Show success notification
                         const Toast = Swal.mixin({
                             toast: true,
                             position: 'top-end',
@@ -218,6 +256,7 @@ function initializeCreatePlaylistButton() {
                             title: `Playlist "${name}" creada exitosamente`
                         });
                         
+                        // Refresh playlist list view
                         htmx.ajax('GET', window.playlistListUrl, {
                             target: '.main-content',
                             swap: 'innerHTML'
@@ -240,18 +279,25 @@ function initializeCreatePlaylistButton() {
     });
 }
 
+/**
+ * Initializes the edit playlist button with modal dialog functionality
+ * Pre-fills form with current playlist data and handles updates
+ */
 function initializeEditPlaylistButton() {
     const editPlaylistBtn = document.getElementById('edit-playlist-btn');
     if (!editPlaylistBtn) return;
 
+    // Remove existing event listeners to prevent duplicates
     editPlaylistBtn.replaceWith(editPlaylistBtn.cloneNode(true));
     const newBtn = document.getElementById('edit-playlist-btn');
     
     newBtn.addEventListener('click', function() {
+        // Get current playlist data from button attributes
         const playlistId = newBtn.dataset.playlistId;
         const currentName = newBtn.dataset.playlistName || '';
         const currentCover = newBtn.dataset.playlistCover || '/static/images/default_cover.png';
 
+        // Show edit playlist modal with pre-filled data
         Swal.fire({
             title: 'Editar Playlist',
             html: `
@@ -285,6 +331,7 @@ function initializeEditPlaylistButton() {
             confirmButtonColor: '#bb86fc',
             cancelButtonColor: '#dc3545',
             didOpen: () => {
+                // Set up cover image selection functionality
                 const changeCoverButton = document.getElementById('change-playlist-cover-button');
                 const coverInput = document.getElementById('playlist-cover');
                 const coverPreview = document.getElementById('playlist-cover-preview');
@@ -293,19 +340,23 @@ function initializeEditPlaylistButton() {
                     coverInput.click();
                 });
 
+                // Handle image file selection with validation
                 coverInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (file) {
+                        // Validate file type
                         if (!file.type.startsWith('image/')) {
                             Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
                             e.target.value = '';
                             return;
                         }
+                        // Validate file size (5MB limit)
                         if (file.size > 5 * 1024 * 1024) {
                             Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
                             e.target.value = '';
                             return;
                         }
+                        // Show image preview
                         const reader = new FileReader();
                         reader.onload = (ev) => {
                             coverPreview.src = ev.target.result;
@@ -316,6 +367,7 @@ function initializeEditPlaylistButton() {
                 });
             },
             preConfirm: () => {
+                // Validate form before submission
                 const name = document.getElementById('playlist-name').value;
                 const coverFile = document.getElementById('playlist-cover').files[0];
 
@@ -330,6 +382,7 @@ function initializeEditPlaylistButton() {
 
             const { name, coverFile } = result.value;
 
+            // Show loading state if uploading image
             if (coverFile) {
                 Swal.fire({
                     title: 'Guardando cambios...',
@@ -340,18 +393,21 @@ function initializeEditPlaylistButton() {
                 });
             }
 
+            // Prepare form data for submission
             const formData = new FormData();
             formData.append('csrfmiddlewaretoken', getCsrfToken());
             formData.append('name', name);
             if (coverFile) formData.append('cover_image', coverFile);
 
+            // Submit playlist update request
             fetch(`/edit-playlist/${playlistId}/`, { method: 'POST', body: formData })
                 .then(resp => {
                     if (!resp.ok) throw new Error('Error al editar la playlist');
+                    // Show success notification
                     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
                     Toast.fire({ icon: 'success', title: `Playlist actualizada` });
 
-                    // Refrescar la vista actual de detalle
+                    // Refresh current detail view
                     htmx.ajax('GET', window.location.pathname, {
                         target: '.main-content',
                         swap: 'innerHTML'
@@ -365,10 +421,15 @@ function initializeEditPlaylistButton() {
     });
 }
 
+/**
+ * Initializes the delete playlist button with confirmation dialog
+ * Handles playlist deletion and navigation back to playlist list
+ */
 function initializeDeletePlaylistButton() {
     const deletePlaylistBtn = document.getElementById('delete-playlist-btn');
     if (!deletePlaylistBtn) return;
 
+    // Remove existing event listeners to prevent duplicates
     deletePlaylistBtn.replaceWith(deletePlaylistBtn.cloneNode(true));
     const newBtn = document.getElementById('delete-playlist-btn');
     
@@ -376,6 +437,7 @@ function initializeDeletePlaylistButton() {
         const playlistId = newBtn.dataset.playlistId;
         const playlistName = newBtn.dataset.playlistName || 'esta playlist';
 
+        // Show confirmation dialog with warning
         Swal.fire({
             title: '¿Eliminar playlist?',
             text: `¿Seguro que deseas eliminar "${playlistName}"? Esta acción no se puede deshacer.`,
@@ -387,16 +449,18 @@ function initializeDeletePlaylistButton() {
         }).then((result) => {
             if (!result.isConfirmed) return;
 
+            // Send deletion request to server
             const formData = new FormData();
             formData.append('csrfmiddlewaretoken', getCsrfToken());
 
             fetch(`/delete-playlist/${playlistId}/`, { method: 'POST', body: formData })
                 .then(resp => {
                     if (!resp.ok) throw new Error('Error al eliminar la playlist');
+                    // Show success notification
                     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
                     Toast.fire({ icon: 'success', title: `Playlist eliminada` });
 
-                    // Volver al listado de playlists
+                    // Navigate back to playlist list
                     htmx.ajax('GET', window.playlistListUrl, {
                         target: '.main-content',
                         swap: 'innerHTML'
@@ -410,33 +474,53 @@ function initializeDeletePlaylistButton() {
     });
 }
 
+/**
+ * Initializes remove from playlist buttons for all songs in the current playlist
+ * Removes existing listeners and adds fresh ones to prevent duplicates
+ */
 function initializeRemoveFromPlaylist() {
     const buttons = document.querySelectorAll('.remove-from-playlist-btn');
     if (!buttons.length) return;
 
-    // Desvincular listeners antiguos
+    // Remove existing event listeners by cloning buttons
     buttons.forEach(btn => btn.replaceWith(btn.cloneNode(true)));
     const freshButtons = document.querySelectorAll('.remove-from-playlist-btn');
+    
+    // Add fresh event listeners
     freshButtons.forEach(btn => {
         btn.addEventListener('click', () => handleRemoveFromPlaylist(btn));
     });
 }
 
+/**
+ * Cleans up sortable instances and listeners before HTMX content swap
+ * Prevents memory leaks and duplicate functionality
+ */
 function cleanupPlaylistListeners() {
     const sortableLists = document.querySelectorAll('.song-list-sortable');
     sortableLists.forEach(list => {
+        // Destroy sortable instances if they exist
         if (list.sortableInstance) {
             list.sortableInstance.destroy();
             list.sortableInstance = null;
         }
+        // Reset initialization flag
         delete list.dataset.sortableInit;
     });
 }
 
+// HTMX event listeners for proper cleanup and re-initialization
+
+/**
+ * Cleanup before HTMX swaps content to prevent conflicts
+ */
 document.body.addEventListener('htmx:beforeSwap', function() {
     cleanupPlaylistListeners();
 });
 
+/**
+ * Re-initialize all playlist functionality after HTMX updates content
+ */
 document.body.addEventListener('htmx:afterRequest', function() {
     initializeCreatePlaylistButton();
     initializeEditPlaylistButton();
@@ -445,7 +529,10 @@ document.body.addEventListener('htmx:afterRequest', function() {
     initializeRemoveFromPlaylist();
 });
 
-// Inicializar también en carga directa
+
+/**
+ * Initialize all playlist functionality when page first loads
+ */
 document.addEventListener('DOMContentLoaded', function() {
     initializeCreatePlaylistButton();
     initializeEditPlaylistButton();
