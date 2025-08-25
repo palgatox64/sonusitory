@@ -14,7 +14,7 @@
         </div>
         <div>
             <h1>{{ playlist.name }}</h1>
-            <h2>{{ playlist_songs|length }} canciones</h2>
+            <h2>{{ playlist_songs|length }} pistas</h2>
         </div>
     </div>
     
@@ -77,7 +77,7 @@
             {% endfor %}
         </ul>
     {% else %}
-        <p>Esta playlist está vacía. ¡Añade algunas canciones!</p>
+        <p>Esta playlist está vacía. ¡Añade algunas pistas!</p>
     {% endif %}
 {% endblock %}
 

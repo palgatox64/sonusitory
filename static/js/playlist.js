@@ -1,4 +1,3 @@
-
 /**
  * Initializes drag-and-drop sorting functionality for playlist songs
  * Loads SortableJS library and sets up drag handles with save functionality
@@ -71,7 +70,7 @@ function handleRemoveFromPlaylist(buttonEl) {
     const songId = buttonEl.dataset.songId;
     const playlistId = buttonEl.dataset.playlistId;
     const songItem = buttonEl.closest('li');
-    const songTitle = songItem?.querySelector('.song-title')?.textContent || 'la canción';
+    const songTitle = songItem?.querySelector('.song-title')?.textContent || 'la pista';
 
     // Show confirmation dialog
     Swal.fire({
@@ -91,7 +90,7 @@ function handleRemoveFromPlaylist(buttonEl) {
 
         fetch(`/remove-from-playlist/${playlistId}/${songId}/`, { method: 'POST', body: formData })
         .then(response => {
-            if (!response.ok) throw new Error('Error al eliminar canción');
+            if (!response.ok) throw new Error('Error al eliminar la pista');
 
             if (songItem) {
                 // Animate song removal from UI
@@ -104,7 +103,7 @@ function handleRemoveFromPlaylist(buttonEl) {
                     const countElement = document.querySelector('h2');
                     if (countElement) {
                         const currentCount = document.querySelectorAll('.sortable-song-item').length;
-                        countElement.textContent = `${currentCount} canciones`;
+                        countElement.textContent = `${currentCount} pistas`;
                     }
                     // Show success notification
                     const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
@@ -114,8 +113,78 @@ function handleRemoveFromPlaylist(buttonEl) {
         })
         .catch(error => {
             console.error('Error:', error);
-            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar la canción de la playlist' });
+            Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar la pista de la playlist' });
         });
+    });
+}
+
+/**
+ * Función helper para manejar la selección de imagen con cropper
+ */
+function handleImageSelection(inputElement, previewElement, callback) {
+    inputElement.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validar tipo de archivo
+        if (!file.type.startsWith('image/')) {
+            Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
+            e.target.value = '';
+            return;
+        }
+
+        // Validar tamaño (5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
+            e.target.value = '';
+            return;
+        }
+
+        // Usar el cropper
+        if (window.imageCropper) {
+            try {
+                window.imageCropper.open(file, (croppedFile, previewUrl) => {
+                    previewElement.src = previewUrl;
+                    previewElement.style.border = '2px solid #bb86fc';
+                    if (callback) callback(croppedFile);
+                }, {
+                    aspectRatio: 1, // Portada cuadrada
+                    viewMode: 1,
+                    autoCropArea: 0.9
+                }).catch((error) => {
+                    console.error('Error al abrir el cropper:', error);
+                    // Fallback
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewElement.src = e.target.result;
+                        previewElement.style.border = '2px solid #bb86fc';
+                        if (callback) callback(file);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } catch (error) {
+                console.error('Error con el cropper:', error);
+                // Fallback
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewElement.src = e.target.result;
+                    previewElement.style.border = '2px solid #bb86fc';
+                    if (callback) callback(file);
+                };
+                reader.readAsDataURL(file);
+            }
+        } else {
+            // Fallback
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewElement.src = e.target.result;
+                previewElement.style.border = '2px solid #bb86fc';
+                if (callback) callback(file);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        e.target.value = '';
     });
 }
 
@@ -132,6 +201,8 @@ function initializeCreatePlaylistButton() {
     const newBtn = document.getElementById('create-playlist-btn');
     
     newBtn.addEventListener('click', function() {
+        let selectedCoverFile = null;
+
         // Show create playlist modal with form
         Swal.fire({
             title: 'Crear Nueva Playlist',
@@ -174,44 +245,22 @@ function initializeCreatePlaylistButton() {
                 changeCoverButton.addEventListener('click', () => {
                     coverInput.click();
                 });
-                
-                // Handle image file selection with validation
-                coverInput.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        // Validate file type
-                        if (!file.type.startsWith('image/')) {
-                            Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
-                            return;
-                        }
-                        
-                        // Validate file size (5MB limit)
-                        if (file.size > 5 * 1024 * 1024) {
-                            Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
-                            return;
-                        }
-                        
-                        // Show image preview
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            coverPreview.src = e.target.result;
-                            coverPreview.style.border = '2px solid #bb86fc';
-                        };
-                        reader.readAsDataURL(file);
-                    }
+
+                // Handle image selection with cropper
+                handleImageSelection(coverInput, coverPreview, (croppedFile) => {
+                    selectedCoverFile = croppedFile;
                 });
             },
             preConfirm: () => {
                 // Validate form before submission
                 const name = document.getElementById('playlist-name').value;
-                const coverFile = document.getElementById('playlist-cover').files[0];
                 
                 if (!name || name.trim() === '') {
                     Swal.showValidationMessage('Debes ingresar un nombre para la playlist');
                     return false;
                 }
                 
-                return { name: name.trim(), coverFile: coverFile };
+                return { name: name.trim(), coverFile: selectedCoverFile };
             }
         }).then((result) => {
             if (result.isConfirmed) {
@@ -296,6 +345,7 @@ function initializeEditPlaylistButton() {
         const playlistId = newBtn.dataset.playlistId;
         const currentName = newBtn.dataset.playlistName || '';
         const currentCover = newBtn.dataset.playlistCover || '/static/images/default_cover.png';
+        let selectedCoverFile = null;
 
         // Show edit playlist modal with pre-filled data
         Swal.fire({
@@ -340,42 +390,20 @@ function initializeEditPlaylistButton() {
                     coverInput.click();
                 });
 
-                // Handle image file selection with validation
-                coverInput.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        // Validate file type
-                        if (!file.type.startsWith('image/')) {
-                            Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
-                            e.target.value = '';
-                            return;
-                        }
-                        // Validate file size (5MB limit)
-                        if (file.size > 5 * 1024 * 1024) {
-                            Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
-                            e.target.value = '';
-                            return;
-                        }
-                        // Show image preview
-                        const reader = new FileReader();
-                        reader.onload = (ev) => {
-                            coverPreview.src = ev.target.result;
-                            coverPreview.style.border = '2px solid #bb86fc';
-                        };
-                        reader.readAsDataURL(file);
-                    }
+                // Handle image selection with cropper
+                handleImageSelection(coverInput, coverPreview, (croppedFile) => {
+                    selectedCoverFile = croppedFile;
                 });
             },
             preConfirm: () => {
                 // Validate form before submission
                 const name = document.getElementById('playlist-name').value;
-                const coverFile = document.getElementById('playlist-cover').files[0];
 
                 if (!name || name.trim() === '') {
                     Swal.showValidationMessage('Debes ingresar un nombre para la playlist');
                     return false;
                 }
-                return { name: name.trim(), coverFile };
+                return { name: name.trim(), coverFile: selectedCoverFile };
             }
         }).then((result) => {
             if (!result.isConfirmed) return;

@@ -54,87 +54,118 @@ function initializeAvatarUpload() {
         const file = newAvatarInput.files[0];
         if (!file) return;
 
-        // Validate file type
+        // Validar tipo de archivo
         if (!file.type.startsWith('image/')) {
             Swal.fire('Error', 'Por favor selecciona un archivo de imagen válido.', 'error');
             return;
         }
 
-        // Validate file size (5MB limit)
+        // Validar tamaño (5MB)
         if (file.size > 5 * 1024 * 1024) {
             Swal.fire('Error', 'La imagen es demasiado grande. Máximo 5MB.', 'error');
             return;
         }
 
-        // Preview the image and show confirmation dialog
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            avatarPreview.src = e.target.result;
-            Swal.fire({
-                title: "¿Quieres guardar este cambio?",
-                imageUrl: e.target.result,
-                imageHeight: 150,
-                imageAlt: 'Previsualización',
-                showCancelButton: true,
-                confirmButtonText: "Guardar",
-                cancelButtonText: "Cancelar",
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Upload image to Imgur
-                    const formData = new FormData();
-                    formData.append('avatar', file);
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-                    Swal.fire({ title: 'Subiendo...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-                    const uploadUrl = window.uploadAvatarUrl || '/upload-avatar/';
-
-                    fetch(uploadUrl, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRFToken': csrfToken,
-                            'Accept': 'application/json'
-                        },
-                        credentials: 'same-origin'
-                    })
-                    .then(async (response) => {
-                        let data = null;
-                        try { data = await response.json(); }
-                        catch { throw new Error(`Error ${response.status}: respuesta no válida del servidor`); }
-                        if (!response.ok) throw new Error(data?.error || data?.detail || `Error ${response.status}`);
-                        return data;
-                    })
-                    .then(data => {
-                        Swal.close();
-                        if (data.avatar_url) {
-                            // Update avatar preview and navigation avatar
-                            avatarPreview.src = data.avatar_url;
-                            const userAvatarInNav = document.querySelector('.user-avatar');
-                            if (userAvatarInNav) userAvatarInNav.src = data.avatar_url;
-                            Swal.fire('¡Guardado!', 'Tu nueva foto de perfil ha sido guardada.', 'success');
+        // Usar el cropper para recortar la imagen
+        if (window.getImageCropper) {
+            try {
+                const cropper = window.getImageCropper();
+                cropper.open(file, (croppedFile, previewUrl) => {
+                    // Mostrar vista previa
+                    avatarPreview.src = previewUrl;
+                    
+                    // Confirmar cambio
+                    Swal.fire({
+                        title: "¿Quieres guardar este cambio?",
+                        imageUrl: previewUrl,
+                        imageHeight: 150,
+                        imageAlt: 'Previsualización',
+                        showCancelButton: true,
+                        confirmButtonText: "Guardar",
+                        cancelButtonText: "Cancelar",
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            uploadAvatar(croppedFile);
                         } else {
-                            throw new Error(data.error || 'No se pudo subir la imagen.');
+                            avatarPreview.src = originalAvatarSrc;
                         }
-                    })
-                    .catch((err) => {
-                        Swal.close();
-                        // Restore original avatar on error
-                        avatarPreview.src = originalAvatarSrc;
-                        Swal.fire('¡Error!', err.message || 'Ocurrió un error de red.', 'error');
                     });
+                }, {
+                    aspectRatio: 1, // Avatar cuadrado
+                    viewMode: 1,
+                    autoCropArea: 0.8
+                }).catch((error) => {
+                    console.error('Error al abrir el cropper:', error);
+                    Swal.fire('Error', 'Error al cargar el recortador de imágenes. Intenta recargar la página.', 'error');
+                });
+            } catch (error) {
+                console.error('Error al obtener el cropper:', error);
+                Swal.fire('Error', 'El recortador de imágenes no está disponible. Intenta recargar la página.', 'error');
+            }
+        } else {
+            // Fallback si no está disponible el cropper
+            Swal.fire('Error', 'El recortador de imágenes no está disponible. Intenta recargar la página.', 'error');
+        }
 
-                } else {
-                    // Restore original avatar on cancel
-                    avatarPreview.src = originalAvatarSrc;
-                    Swal.fire("Cancelado", "Tu foto de perfil no ha cambiado.", "info");
-                }
-            });
-        };
-        reader.readAsDataURL(file);
         newAvatarInput.value = '';
     });
+
+    /**
+     * Función para subir el avatar recortado
+     */
+    function uploadAvatar(file) {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+        
+        Swal.fire({ 
+            title: 'Subiendo...', 
+            allowOutsideClick: false, 
+            didOpen: () => Swal.showLoading() 
+        });
+
+        const uploadUrl = window.uploadAvatarUrl || '/upload-avatar/';
+
+        fetch(uploadUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(async (response) => {
+            let data = null;
+            try { 
+                data = await response.json(); 
+            } catch { 
+                throw new Error(`Error ${response.status}: respuesta no válida del servidor`); 
+            }
+            if (!response.ok) throw new Error(data?.error || data?.detail || `Error ${response.status}`);
+            return data;
+        })
+        .then(data => {
+            Swal.close();
+            if (data.avatar_url) {
+                // Update avatar preview and navigation avatar
+                avatarPreview.src = data.avatar_url;
+                const userAvatarInNav = document.querySelector('.user-avatar');
+                if (userAvatarInNav) userAvatarInNav.src = data.avatar_url;
+                
+                Swal.fire('¡Guardado!', 'Tu nueva foto de perfil ha sido guardada.', 'success');
+            } else {
+                throw new Error(data.error || 'No se pudo subir la imagen.');
+            }
+        })
+        .catch((err) => {
+            Swal.close();
+            avatarPreview.src = originalAvatarSrc;
+            Swal.fire('¡Error!', err.message || 'Ocurrió un error de red.', 'error');
+        });
+    }
 }
 
 /**
@@ -191,7 +222,7 @@ function initializeAccountButtonListener() {
             if (hasCredentials) {
                 Swal.fire({
                     title: '¿Estás seguro?',
-                    text: "Se borrarán todos tus datos de la librería (canciones, álbumes, artistas) y se desvinculará tu nube. ¡Pero puedes volver a vincular tu nube más tarde!",
+                    text: "Se borrarán todos tus datos de la librería (pistas, álbumes, artistas) y se desvinculará tu nube. ¡Pero puedes volver a vincular tu nube más tarde!",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
@@ -223,7 +254,7 @@ function initializeAccountButtonListener() {
  * @param {string} songName - The display name of the song
  */
 function openPlaylistModal(songId, songName) {
-    console.log('Abriendo modal para canción:', songId, songName);
+    console.log('Abriendo modal para pista:', songId, songName);
     
     // Fetch user's playlists from the server
     fetch('/get-user-playlists/')
@@ -259,7 +290,7 @@ function openPlaylistModal(songId, songName) {
                              style="width: 50px; height: 50px; border-radius: 5px; object-fit: cover;">
                         <div>
                             <div style="color: #ffffff; font-weight: 600; font-size: 1rem;">${playlist.name}</div>
-                            <div style="color: #b3b3b3; font-size: 0.9rem;">${playlist.song_count || 0} canción${(playlist.song_count || 0) !== 1 ? 'es' : ''}</div>
+                            <div style="color: #b3b3b3; font-size: 0.9rem;">${playlist.song_count || 0} pista${(playlist.song_count || 0) !== 1 ? 's' : ''}</div>
                         </div>
                     </div>`
                 ).join('');
@@ -356,7 +387,7 @@ function addSongToPlaylist(songId, playlistId, songName, playlistName) {
         Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'No se pudo añadir la canción a la playlist'
+            text: 'No se pudo añadir la pista a la playlist'
         });
     });
 }
@@ -492,7 +523,7 @@ window.handleLikeClick = function(songId, likeButton) {
                                         songList.style.display = 'none';
 
                                         const emptyMessage = document.createElement('p');
-                                        emptyMessage.textContent = 'No tienes canciones marcadas como "Me gusta" aún.';
+                                        emptyMessage.textContent = 'No tienes pistas marcadas como "Me gusta" aún.';
                                         songList.parentNode.insertBefore(emptyMessage, songList.nextSibling);
                                     }
                                 }
@@ -617,7 +648,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Auto-play next song when current song ends
         audioPlayer.addEventListener('ended', () => {
-            console.log('Canción terminada. Cola actual:', songQueue.map(song => song.name));
+            console.log('pista terminada. Cola actual:', songQueue.map(song => song.name));
             if (songQueue.length > 0) {
                 const nextSong = songQueue.shift();
                 console.log('Reproduciendo siguiente:', nextSong.name);
@@ -626,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // No more songs in queue - reset UI
                 const songList = document.getElementById('song-list');
                 if (songList) songList.classList.remove('playbook-active');
-                nowPlayingElem.textContent = 'Selecciona una canción';
+                nowPlayingElem.textContent = 'Selecciona una pista';
             }
         });
     }
@@ -698,7 +729,7 @@ document.body.addEventListener('htmx:afterRequest', function(event) {
         // Map scan button IDs to user-friendly labels
         const scanLabels = {
             'scan-button': 'Escaneo completo de librería',
-            'quick-scan-button': 'Búsqueda rápida de nuevas canciones',
+            'quick-scan-button': 'Búsqueda rápida de nuevas pistas',
             'cover-scan-button': 'Búsqueda de portadas'
         };
 
@@ -803,8 +834,8 @@ function formatStep(step, current, total) {
     const map = {
         searching_audio_files: 'Buscando archivos de audio en tu Drive...',
         processing_audio_files: (c) => `Procesando archivos de audio${typeof c === 'number' ? ` (procesados: ${c})` : ''}...`,
-        getting_existing_files: 'Consultando canciones existentes...',
-        searching_new_files: 'Buscando nuevas canciones...',
+        getting_existing_files: 'Consultando pistas existentes...',
+        searching_new_files: 'Buscando nuevas pistas...',
         getting_existing_albums: 'Buscando álbumes sin portada...',
         covers: (c, t) => `Buscando portadas${typeof c === 'number' && typeof t === 'number' ? ` (${c} de ${t})` : ''}...`,
         queued: 'En cola...'
