@@ -1,4 +1,3 @@
-
 // Global variables for music playback functionality
 let songQueue = [];  // Array to store queued songs for continuous playback
 let songMenuListenersInitialized = false;  // Flag to prevent duplicate event listener initialization
@@ -666,6 +665,7 @@ document.body.addEventListener('htmx:afterRequest', function(event) {
     // Re-initialize components after HTMX content updates
     initializeLikeButtons();
     initializeAvatarUpload();
+    initializeAccountButtonListener();
     updateUserMenuVisibility();
     
     try {
