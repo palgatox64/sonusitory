@@ -1,6 +1,6 @@
 # Django core imports
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import StreamingHttpResponse, HttpResponse, Http404
+from django.http import StreamingHttpResponse, JsonResponse, HttpResponse, Http404
 from django.contrib.auth.decorators import login_required
 # Google OAuth and Drive API imports
 from google_auth_oauthlib.flow import Flow
@@ -9,7 +9,6 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 # Local model imports
 from .models import UserProfile, GoogleCredential, Artist, Album, Song, LikedSong, Playlist, PlaylistSong
-from django.http import JsonResponse
 # Celery task imports for background processing
 from .tasks import scan_user_library
 from celery.result import AsyncResult
@@ -21,6 +20,8 @@ import requests
 import requests
 from django.utils import timezone
 from django.db import models
+from django.conf import settings 
+from django.urls import reverse
 
 # Google OAuth configuration
 CLIENT_SECRETS_FILE = os.path.join(os.path.dirname(__file__), '..', 'credentials', 'client_secret.json')
@@ -39,24 +40,29 @@ def google_login(request):
     if GoogleCredential.objects.filter(user=request.user).exists():
         return render(request, 'player/already_linked.html')
 
-    # Create OAuth flow with Google Drive read-only scope
+    if settings.DEBUG:
+        redirect_uri = request.build_absolute_uri(reverse('google_callback')).replace('http', 'https')
+        if not 'trycloudflare.com' in redirect_uri:
+             redirect_uri = 'http://localhost:8000/callback'
+    else:
+        redirect_uri = request.build_absolute_uri(reverse('google_callback')).replace('http', 'https')
+        
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE,
         scopes=SCOPES,
-        redirect_uri='http://localhost:8000/callback'
+        redirect_uri=redirect_uri
     )
-    # Generate authorization URL with offline access for refresh tokens
+
     authorization_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true',
-        prompt='consent'  # Force consent screen to ensure refresh token
+        prompt='consent'
     )
     context = {'auth_url': authorization_url}
     
-    # Return partial template for HTMX requests
     if request.htmx:
         return render(request, 'player/partials/cloud_login_content.html', context)
-        
+
     return render(request, 'player/cloud_login.html', context)
 
 @login_required
@@ -150,17 +156,22 @@ def google_callback(request):
     Handles the OAuth callback from Google.
     Exchanges authorization code for access tokens and stores credentials.
     """
-
-    # Recreate the flow to exchange the authorization code
+    if settings.DEBUG:
+        redirect_uri = request.build_absolute_uri(reverse('google_callback')).replace('http', 'https')
+        if not 'trycloudflare.com' in redirect_uri:
+             redirect_uri = 'http://localhost:8000/callback'
+    else:
+        redirect_uri = request.build_absolute_uri(reverse('google_callback')).replace('http', 'https')
+        
     flow = Flow.from_client_secrets_file(
         CLIENT_SECRETS_FILE,
         scopes=SCOPES,
-        redirect_uri='http://localhost:8000/callback'
+        redirect_uri=redirect_uri
     )
-    # Exchange authorization code for credentials
+    
     flow.fetch_token(authorization_response=request.build_absolute_uri())
     credentials = flow.credentials
-    # Store credentials in database for future use
+    
     GoogleCredential.objects.update_or_create(
         user=request.user,
         defaults={'token_json': credentials.to_json()}
